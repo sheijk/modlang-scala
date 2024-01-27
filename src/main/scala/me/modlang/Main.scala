@@ -29,20 +29,34 @@ def toToken(str : String) : Token =
     case None => Token.Op(str)
 
 def andreMode() =
-  // import scala.io.StdIn.readLine
-  // val source = readLine()
-  val source = "1  2 5 + +"
-  stackRun(source)
+  println("Modular language proto services started")
+  runSource("1  2 5 + +")
+  repl()
 
-def stackRun(source : String) =
+def repl() =
+  import scala.io.StdIn.readLine
+  print("> ")
+  val source = readLine()
+  println()
+  source match
+    case "exit" | "quit" | "q" => ()
+    case source => runSource(source)
+
+def runSource(source : String) =
+  val stack = evalSource(source)
+  println("Stack:")
+  stack.foreach(println)
+
+def evalSource(source : String) =
   val stringTokens = source.split(" +") match
     case l: Array[String|Null] =>
       l.map(x => x match
         case x : String => x
         case _ => throw Error("null token"))
     case _ => throw Error("lexer error")
-  val tokens = stringTokens.map(toToken)
+  evalTokens(stringTokens.map(toToken))
 
+def evalTokens(tokens : Seq[Token]) : Seq[Value] =
   var stack : List[Value] = List()
 
   for (token <- tokens)
@@ -59,8 +73,7 @@ def stackRun(source : String) =
       case Token.Op(unknown) =>
         throw Error("invalid token " + unknown)
 
-  println("Stack:")
-  stack.foreach(println)
+  stack
 
 @main def Main(args: String*): Unit =
   println("─" * 100)
