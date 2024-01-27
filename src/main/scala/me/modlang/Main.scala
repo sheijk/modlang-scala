@@ -18,10 +18,18 @@ def adt_demo() =
   run(comp)
   run(Expr.Plus(Expr.Constant(Value.I(10)), Expr.Constant(Value.I(20))))
 
+def andreMode() =
+  import stackvm.*
+  println("Modular language proto services started")
+  runSource("1  2 5 + +")
+  runSource("10 2 + 11 > true &&")
+  repl()
+
 @main def Main(args: String*): Unit =
   println("─" * 100)
   println("hello nix")
 
   adt_demo()
+  andreMode()
 
   println("─" * 100)
