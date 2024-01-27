@@ -2,14 +2,24 @@ package me
 package modlang
 package stackvm
 
+import adt_interpreter.*
+
 enum Token:
   case Number(value: Int)
+  case Bool(value : Boolean)
   case Op(name : String)
+  case Nop
 
 def toToken(str : String) : Token =
   str.toIntOption match
-    case Some(i) => Token.Number(i)
-    case None => Token.Op(str)
+    case Some(i) =>
+      Token.Number(i)
+    case None =>
+      str match
+      case "" => Token.Nop
+      case "true" => Token.Bool(true)
+      case "false" => Token.Bool(false)
+      case _ => Token.Op(str)
 
 def repl() =
   import scala.io.StdIn.readLine
@@ -22,8 +32,9 @@ def repl() =
 
 def runSource(source : String) =
   val stack = evalSource(source)
-  println("Stack:")
-  stack.foreach(println)
+  print("Got ")
+  stack.foreach(x => print(s" $x"))
+  println(s" by running $source")
 
 def evalSource(source : String) =
   val stringTokens = source.split(" +") match
@@ -37,19 +48,33 @@ def evalSource(source : String) =
 def evalTokens(tokens : Seq[Token]) : Seq[Value] =
   var stack : List[Value] = List()
 
+  def takeTwo() : (Value, Value) =
+    stack match
+    case rhs :: lhs :: rem =>
+      stack = rem
+      (lhs, rhs)
+    case _ =>
+      throw Error("stack underflow" + stack)
+
+  def applyStack(fn : (Expr, Expr) => Expr) =
+    val (lhs, rhs) = takeTwo()
+    stack = interprete(fn(Expr.Constant(lhs), Expr.Constant(rhs))) :: stack
+
   for (token <- tokens)
-    println(s"read $token")
     token match
       case Token.Number(i) =>
         stack = Value.I(i) :: stack
+      case Token.Bool(b) =>
+        stack = Value.B(b) :: stack
       case Token.Op("+") =>
-        stack match
-          case lhs :: rhs :: rem =>
-            stack = interprete(Expr.Plus(Expr.Constant(lhs), Expr.Constant(rhs))) :: rem
-          case _ =>
-            throw Error("stack underflow" + stack)
+        applyStack(Expr.Plus.apply)
+      case Token.Op("&&") =>
+        applyStack(Expr.And.apply)
+      case Token.Op(">") =>
+        applyStack(Expr.GreaterThan.apply)
       case Token.Op(unknown) =>
         throw Error("invalid token " + unknown)
+      case Token.Nop => ()
 
   stack
 

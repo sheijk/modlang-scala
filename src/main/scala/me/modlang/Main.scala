@@ -22,6 +22,7 @@ def andreMode() =
   import stackvm.*
   println("Modular language proto services started")
   runSource("1  2 5 + +")
+  runSource("10 2 + 11 > true &&")
   repl()
 
 @main def Main(args: String*): Unit =
