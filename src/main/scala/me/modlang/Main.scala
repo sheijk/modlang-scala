@@ -34,17 +34,18 @@ def andreMode() =
 
   for (token <- tokens)
     println(token)
-    token match
-      case "1" => stack = Value.I(1) :: stack
-      case "2" => stack = Value.I(2) :: stack
-      case "5" => stack = Value.I(5) :: stack
-      case "+" =>
-        stack match
-          case lhs :: rhs :: rem =>
-            stack = adt_interpreter.interprete(Expr.Plus(Expr.Constant(lhs), Expr.Constant(rhs))) :: rem
-          case _ => throw Error("stack underflow" + stack)
-      case unknown =>
-        throw Error("invalid token " + unknown)
+    token.toIntOption match
+      case Some(i) =>
+        stack = Value.I(i) :: stack
+      case None =>
+        token match
+          case "+" =>
+            stack match
+              case lhs :: rhs :: rem =>
+                stack = adt_interpreter.interprete(Expr.Plus(Expr.Constant(lhs), Expr.Constant(rhs))) :: rem
+              case _ => throw Error("stack underflow" + stack)
+          case unknown =>
+            throw Error("invalid token " + unknown)
 
   println("Stack:")
   stack.foreach(println)
