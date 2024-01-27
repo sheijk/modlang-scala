@@ -1,0 +1,31 @@
+
+Port of modular-lang-proto from OCaml to Scala
+
+Mostly to see if tests and types get any simpler
+
+* Info for Scala/Metal/Emacs
+** TODO indentation with metals
+:PROPERTIES:
+:CREATED:  <2024-01-26 Fri 21:57>
+:END:
+
+#+begin_src elisp
+(use-package lsp-metals
+  :ensure t
+  :custom
+  (lsp-metals-server-args
+   '("-J-Dmetals.allow-multiline-string-formatting=off"))
+  :hook (scala-mode . lsp))
+#+end_src
+
+** [[https://jointhefreeworld.org/blog/articles/emacs/Emacs%20and%20Scala%20setup%20with%20Eglot.html][Emacs and Scala setup with Eglot]]
+
+** [[https://ag91.github.io/blog/2020/10/16/my-emacs-setup-for-scala-development/][My Emacs setup for Scala development - Where parallels cross]]
+
+** [[https://scalameta.org/metals/docs/editors/emacs][Emacs | Metals]]
+
+** [[https://www.youtube.com/watch?v=-xRfJcwhy7A][#Scala Crash Course by a Scala Veteran (with some JavaScript flavor)]]
+
+** [[https://github.com/search?type=code&q=mkSbtDerivation][scala usage in nix on github]]
+
+** [[https://duckduckgo.com/?t=ffab&q=emacs+metals+scala+eglot&ia=web][emacs metals scala eglot at DuckDuckGo]]
