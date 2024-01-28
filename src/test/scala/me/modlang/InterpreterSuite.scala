@@ -1,37 +1,37 @@
 package me
 package modlang
 
-final class InterpreterSuite extends TestSuite:
-  import adt_interpreter.*
+abstract class InterpreterSuite[Expr](a : Ast[Expr] & Runner[Expr]) extends TestSuite:
+  import a.*
+
   test("simple value equality"):
-    expectEquals(Value.I(10), Value.I(10))
-    expectEquals(Value.B(true), Value.B(true))
-    expectEquals(Value.B(false), Value.B(false))
+    expectEquals(int(10), int(10))
+    expectEquals(bool(true), bool(true))
+    expectEquals(bool(false), bool(false))
 
   test("different values should be different"):
-    expectNotEquals(Value.B(true), Value.B(false))
-    expectNotEquals(Value.I(1), Value.I(2))
+    expectNotEquals(bool(true), bool(false))
+    expectNotEquals(int(1), int(2))
 
-  def int(v: Int) = Expr.Constant(Value.I(v))
-  def bool(v: Boolean) = Expr.Constant(Value.B(v))
-  import Expr.*
-
-  def value(v : Int | Boolean) =
+  private def value(v : Int | Boolean) =
     v match
-    case v : Int => Value.I(v)
-    case v : Boolean => Value.B(v)
+    case v : Int => int(v)
+    case v : Boolean => bool(v)
 
   def checkEval(expected: Int|Boolean, program: Expr)(implicit loc : munit.Location) =
-    expectEquals(value(expected), interprete(program))
+    expectEquals(value(expected), run(program))
 
   test("simple expression evaluation"):
-    checkEval(3, Plus(int(1), int(2)))
-    checkEval(15, Plus(int(10), int(5)))
-    checkEval(true, And(GreaterThan(int(10), int(5)), GreaterThan(int(3), int(2))))
+    checkEval(3, plus(c(1), c(2)))
+    checkEval(15, plus(c(10), c(5)))
+    checkEval(true, and(greaterThan(c(10), c(5)), greaterThan(c(3), c(2))))
 
   test("and"):
-    checkEval(true, And(bool(true), bool(true)))
-    checkEval(false, And(bool(true), bool(false)))
-    checkEval(false, And(bool(false), bool(true)))
-    checkEval(false, And(bool(false), bool(false)))
+    checkEval(true, and(c(true), c(true)))
+    checkEval(false, and(c(true), c(false)))
+    checkEval(false, and(c(false), c(true)))
+    checkEval(false, and(c(false), c(false)))
+
+final class AdtInterpreterSuite extends InterpreterSuite[adt_interpreter.Expr](new AdtAst())
+final class UnionInterpreterSuite extends InterpreterSuite[union_interpreter.Expr](new UnionAst())
 

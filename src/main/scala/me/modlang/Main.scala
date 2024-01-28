@@ -1,37 +1,20 @@
 package me
 package modlang
 
-def adt_demo() =
-  println("Running adt interpreter")
-  import adt_interpreter.*
-
-  def int(v : Int) = Expr.Constant(Value.I(v))
-  def bool(v : Boolean) = Expr.Constant(Value.B(v))
-
-  import Expr.*
-
-  run(Plus(int(10), int(5)))
-  run(And(GreaterThan(int(10), int(5)), GreaterThan(int(3), int(2))))
-  run(And(bool(true), bool(false)))
-
-  val comp = Expr.And(Expr.GreaterThan(Expr.Constant(Value.I(10)), Expr.Constant(Value.I(5))),
-    Expr.GreaterThan(Expr.Constant(Value.I(10)), Expr.Constant(Value.I(5))))
-  run(comp)
-  run(Expr.Plus(Expr.Constant(Value.I(10)), Expr.Constant(Value.I(20))))
-
-def union_demo() =
-  println("Running union interpreter")
-  import union_interpreter.*
-  def int(v : Int) = Expr(IntValue(v))
-  def bool(v : Boolean) = Expr(BoolValue(v))
-
-  run(Expr(Plus(int(10), int(5))))
-  run(Expr(And(Expr(GreaterThan(int(10), int(5))), Expr(GreaterThan(int(3), int(2))))))
-  run(Expr(And(bool(true), bool(false))))
-
-  val comp = Expr(And(Expr(GreaterThan(int(10), int(5))), Expr(GreaterThan(int(10), int(5)))))
-  run(comp)
-  run(Expr(Plus(int(10), int(20))))
+def demo[Expr](
+)(using
+  a: Ast[Expr] & Runner[Expr]
+) =
+  import a.*
+  println(s"Running $name")
+  val programs = List(
+    plus(c(10), c(5)),
+    and(greaterThan(c(10), c(5)), greaterThan(c(3), c(2))),
+    and(c(true), c(false)),
+    and(greaterThan(c(10), c(5)), greaterThan(c(10), c(5))),
+    plus(c(10), c(20)),
+  )
+  programs.foreach(runAndPrint(_))
 
 def andreMode() =
   import stackvm.*
@@ -44,8 +27,8 @@ def andreMode() =
   println("─" * 100)
   println("hello nix")
 
-  adt_demo()
-  union_demo()
+  demo()(using AdtAst())
+  demo()(using UnionAst())
   andreMode()
 
   println("─" * 100)
