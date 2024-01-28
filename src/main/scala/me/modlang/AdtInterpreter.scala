@@ -2,8 +2,6 @@ package me
 package modlang
 package adt_interpreter
 
-// import scala.io.StdIn.readLine
-
 enum Value:
   case I(value : Int)
   case B(value : Boolean)
