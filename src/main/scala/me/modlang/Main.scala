@@ -8,11 +8,11 @@ def demo[Expr](
   import a.*
   println(s"Running $name")
   val programs = List(
-    plus(int(10), int(5)),
-    and(greaterThan(int(10), int(5)), greaterThan(int(3), int(2))),
-    and(bool(true), bool(false)),
-    and(greaterThan(int(10), int(5)), greaterThan(int(10), int(5))),
-    plus(int(10), int(20)),
+    plus(c(10), c(5)),
+    and(greaterThan(c(10), c(5)), greaterThan(c(3), c(2))),
+    and(c(true), c(false)),
+    and(greaterThan(c(10), c(5)), greaterThan(c(10), c(5))),
+    plus(c(10), c(20)),
   )
   programs.foreach(runAndPrint(_))
 
