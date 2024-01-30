@@ -46,22 +46,3 @@ def demo() =
   println(bar[Boolean]())
   // Calc_bool.tests[Boolean].foreach Calc_bool.runTest
   // ((expected, expr) => if expected != expr then throw Error("blah"))
-
-object Calc_int:
-  trait Lang:
-    type Value
-    type Expr <: Value
-    def int(v: Int): Value
-    def +(lhs: Expr, rhs:Expr):Expr
-
-  class ToString extends Lang:
-    type Value = String
-    type Expr = String
-
-    override def int(v: Int): Value = v.toString()
-    override def +(lhs: Expr, rhs: Expr): Expr = s"($lhs + $rhs)"
-
-// object Calc:
-//   trait Lang extends Calc_bool.Lang, Calc_int.Lang:
-//     def <(lhs:Expr, rhs:Expr):Expr
-
