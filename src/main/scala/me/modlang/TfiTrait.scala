@@ -6,7 +6,9 @@ package tfi_trait
 
 object Empty:
   trait Lang:
-   type Expr
+    type Expr
+
+type Test[T, Lang <: Empty.Lang] = (T, (l: Lang) => l.Expr)
 
 object Calc_bool:
   trait Lang extends Empty.Lang:
@@ -43,7 +45,8 @@ object Calc_bool:
       (false, (l: Lang) => l.and(l.bool(true), l.bool(false))),
     )
 
-  def runTest(t: (Boolean, (l: Lang) => l.Expr)) =
+  type MyTest = Test[Boolean, Lang]
+  def runTest(t: MyTest) =
     val source = t._2(ToString())
     val result = t._2(EvalBool())
     val expected = t._1
@@ -84,7 +87,8 @@ object Calc_int:
       (20, (l: Lang) => l.plus(l.int(5), l.int(15))),
     )
 
-  def runTest(t: (Int, (l: Lang) => l.Expr)) =
+  type MyTest = Test[Int, Lang]
+  def runTest(t: MyTest) =
     val source = t._2(ToString())
     val result = t._2(EvalInt())
     val expected = t._1
@@ -111,16 +115,15 @@ object Calc:
     def fromInt(v: Int): Expr = v
     def asInt(t: Expr): Int = t.asInstanceOf[Int]
 
-  type Test = (Int|Boolean, (l: Lang) => l.Expr)
-
-  def tests() : List[Test] =
-    Calc_int.tests().asInstanceOf[List[Test]] ++
-    Calc_bool.tests().asInstanceOf[List[Test]] ++
+  def tests() =
+    Calc_int.tests().asInstanceOf[List[MyTest]] ++
+    Calc_bool.tests().asInstanceOf[List[MyTest]] ++
     List(
       (true, (l: Lang) => l.and(l.greaterThan(l.int(10), l.int(5)), l.greaterThan(l.int(3), l.int(2))))
     )
 
-  def runTest(t: (Int | Boolean, (l: Lang) => l.Expr)) =
+  type MyTest = Test[Int|Boolean, Lang]
+  def runTest(t: MyTest) =
     val source = t._2(ToString())
     val result = t._2(EvalIntBool())
     val expected = t._1
