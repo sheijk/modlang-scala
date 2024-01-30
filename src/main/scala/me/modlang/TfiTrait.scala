@@ -5,18 +5,17 @@ package tfi_trait
 // consider adding more types, like TypedExpr[T], etc.
 
 object Empty:
-  trait Lang:
-    type Expr
+  trait Lang[T]:
+    type Expr = T
 
-type Test[T, Lang <: Empty.Lang] = (T, (l: Lang) => l.Expr)
+type Test[T, Lang <: Empty.Lang[?]] = (T, (l: Lang) => l.Expr)
 
 object Calc_bool:
-  trait Lang extends Empty.Lang:
-    type Expr
+  trait Lang[T] extends Empty.Lang[T]:
     def bool(v: Boolean): Expr
     def and(lhs: Expr, rhs: Expr): Expr
 
-  trait ToStringMixin extends Lang:
+  trait ToStringMixin extends Lang[String]:
     type Expr = String
 
     def bool(v: Boolean): String = v.toString()
@@ -24,28 +23,25 @@ object Calc_bool:
 
   class ToString extends ToStringMixin
 
-  trait Eval extends Lang:
-    type Expr
-
+  trait Eval[T] extends Lang[T]:
     override def bool(v: Boolean): Expr = fromBool(v)
     override def and(lhs: Expr, rhs: Expr): Expr = fromBool(asBool(lhs) & asBool(rhs))
 
     def fromBool(v: Boolean): Expr
     def asBool(t: Expr): Boolean
 
-  class EvalBool extends Eval:
-    type Expr = Boolean
+  class EvalBool extends Eval[Boolean]:
     override def fromBool(v: Boolean): Expr = v
     override def asBool(t: Expr): Boolean = t
 
   def tests() =
     List(
-      (true, (l: Lang) => l.bool(true)),
-      (true, (l: Lang) => l.and(l.bool(true), l.bool(true))),
-      (false, (l: Lang) => l.and(l.bool(true), l.bool(false))),
+      (true, (l: Lang[?]) => l.bool(true)),
+      (true, (l: Lang[?]) => l.and(l.bool(true), l.bool(true))),
+      (false, (l: Lang[?]) => l.and(l.bool(true), l.bool(false))),
     )
 
-  type MyTest = Test[Boolean, Lang]
+  type MyTest = Test[Boolean, Lang[?]]
   def runTest(t: MyTest) =
     val source = t._2(ToString())
     val result = t._2(EvalBool())
@@ -56,12 +52,11 @@ object Calc_bool:
   def testing() = tests().foreach(runTest)
 
 object Calc_int:
-  trait Lang extends Empty.Lang:
-    type Expr
+  trait Lang[T] extends Empty.Lang[T]:
     def int(v: Int): Expr
     def plus(lhs: Expr, rhs: Expr): Expr
 
-  trait ToStringMixin extends Lang:
+  trait ToStringMixin extends Lang[String]:
     type Expr = String
 
     def int(v: Int): String = v.toString()
@@ -69,25 +64,24 @@ object Calc_int:
 
   class ToString extends ToStringMixin
 
-  trait Eval extends Lang:
+  trait Eval[T] extends Lang[T]:
     override def int(v: Int): Expr = fromInt(v)
     override def plus(lhs: Expr, rhs: Expr): Expr = fromInt(asInt(lhs) + asInt(rhs))
 
     def fromInt(v: Int): Expr
     def asInt(t: Expr): Int
 
-  class EvalInt extends Eval:
-    type Expr = Int
+  class EvalInt extends Eval[Int]:
     def fromInt(v: Int) = v
     def asInt(v: Expr) = v
 
   def tests() =
     List(
-      (10, (l: Lang) => l.int(10)),
-      (20, (l: Lang) => l.plus(l.int(5), l.int(15))),
+      (10, (l: Lang[?]) => l.int(10)),
+      (20, (l: Lang[?]) => l.plus(l.int(5), l.int(15))),
     )
 
-  type MyTest = Test[Int, Lang]
+  type MyTest = Test[Int, Lang[?]]
   def runTest(t: MyTest) =
     val source = t._2(ToString())
     val result = t._2(EvalInt())
@@ -98,17 +92,19 @@ object Calc_int:
   def testing() = tests().foreach(runTest)
 
 object Calc:
-  trait Lang extends Calc_int.Lang, Calc_bool.Lang:
+  trait Lang[T] extends Calc_int.Lang[T], Calc_bool.Lang[T]:
     def greaterThan(lhs: Expr, rhs: Expr): Expr
 
-  trait ToStringMixin extends Lang, Calc_bool.ToStringMixin, Calc_int.ToStringMixin:
+  trait ToStringMixin extends Lang[String], Calc_bool.ToStringMixin, Calc_int.ToStringMixin:
     def greaterThan(lhs: Expr, rhs: Expr): Expr = s"($lhs > $rhs)"
   class ToString extends ToStringMixin
 
-  trait Eval extends Lang, Calc_bool.Eval, Calc_int.Eval:
+  trait Eval[T] extends Lang[T], Calc_bool.Eval[T], Calc_int.Eval[T]:
     def greaterThan(lhs: Expr, rhs: Expr): Expr = fromBool(asInt(lhs) > asInt(rhs))
 
-  class EvalIntBool extends Eval:
+  type Value = Int|Boolean
+
+  class EvalIntBool extends Eval[Value]:
     type Expr = Boolean | Int
     def fromBool(v: Boolean): Expr = v
     def asBool(t: Expr): Boolean = t.asInstanceOf[Boolean]
@@ -119,10 +115,10 @@ object Calc:
     Calc_int.tests().asInstanceOf[List[MyTest]] ++
     Calc_bool.tests().asInstanceOf[List[MyTest]] ++
     List(
-      (true, (l: Lang) => l.and(l.greaterThan(l.int(10), l.int(5)), l.greaterThan(l.int(3), l.int(2))))
+      (true, (l: Lang[?]) => l.and(l.greaterThan(l.int(10), l.int(5)), l.greaterThan(l.int(3), l.int(2))))
     )
 
-  type MyTest = Test[Int|Boolean, Lang]
+  type MyTest = Test[Int|Boolean, Lang[?]]
   def runTest(t: MyTest) =
     val source = t._2(ToString())
     val result = t._2(EvalIntBool())
