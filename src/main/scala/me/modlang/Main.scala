@@ -30,5 +30,6 @@ def andreMode() =
   demo()(using AdtAst())
   demo()(using UnionAst())
   andreMode()
+  tfi.demo()
 
   println("─" * 100)
