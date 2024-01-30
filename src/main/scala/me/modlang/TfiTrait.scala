@@ -111,13 +111,11 @@ object Calc:
     def fromInt(v: Int): Expr = v
     def asInt(t: Expr): Int = t.asInstanceOf[Int]
 
-  def transformTest[V, L >: Lang <: Empty.Lang](t: (V, (l:L) => l.Expr)) : (Int|Boolean, (l:Lang) => l.Expr) =
-    (t._1.asInstanceOf[Int|Boolean],
-     (l : Lang) => t._2(l))
+  type Test = (Int|Boolean, (l: Lang) => l.Expr)
 
-  def tests() =
-    Calc_int.tests().map(transformTest[Int, Calc_int.Lang]) ++
-    Calc_bool.tests().map(transformTest[Boolean, Calc_bool.Lang]) ++
+  def tests() : List[Test] =
+    Calc_int.tests().asInstanceOf[List[Test]] ++
+    Calc_bool.tests().asInstanceOf[List[Test]] ++
     List(
       (true, (l: Lang) => l.and(l.greaterThan(l.int(10), l.int(5)), l.greaterThan(l.int(3), l.int(2))))
     )
