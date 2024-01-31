@@ -45,3 +45,5 @@ def demo() =
   Calc_int.testing()
   println("  Calc")
   Calc.testing()
+  println("  Algo_calc")
+  Algo_calc.testing()
