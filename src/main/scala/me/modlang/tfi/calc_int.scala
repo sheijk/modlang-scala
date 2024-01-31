@@ -7,7 +7,7 @@ package Calc_int:
     def int(v: Int): Expr
     def plus(lhs: Expr, rhs: Expr): Expr
 
-  trait ToStringMixin extends Lang[String]:
+  trait ToStringMixin extends Lang[String], EvalId[String]:
     type Expr = String
 
     def int(v: Int): String = v.toString()
@@ -25,7 +25,7 @@ package Calc_int:
 
   type Value = Int
 
-  class Eval extends EvalMixin[Value]:
+  class Eval extends EvalMixin[Value], EvalId[Value]:
     def fromInt(v: Int) = v
     def asInt(v: Expr) = v
 

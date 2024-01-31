@@ -7,7 +7,7 @@ package Calc_bool:
     def bool(v: Boolean): Expr
     def and(lhs: Expr, rhs: Expr): Expr
 
-  trait ToStringMixin extends Lang[String]:
+  trait ToStringMixin extends Lang[String], EvalId[String]:
     type Expr = String
 
     def bool(v: Boolean): String = v.toString()
@@ -25,7 +25,7 @@ package Calc_bool:
 
   type Value = Boolean
 
-  class Eval extends EvalMixin[Value]:
+  class Eval extends EvalMixin[Value], EvalId[Value]:
     override def fromBool(v: Value): Expr = v
     override def asBool(t: Value): Boolean = t
 

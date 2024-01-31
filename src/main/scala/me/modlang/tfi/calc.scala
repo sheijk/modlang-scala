@@ -17,7 +17,7 @@ package Calc:
 
   type Value = Int | Boolean
 
-  class Eval extends EvalMixin[Value]:
+  class Eval extends EvalMixin[Value], EvalId[Value]:
     type Expr = Boolean | Int
     def fromBool(v: Boolean): Expr = v
     def asBool(t: Expr): Boolean = t.asInstanceOf[Boolean]

@@ -7,13 +7,14 @@ package Algo:
     def if_(cond: Expr, onTrue: Expr, onFalse: Expr): Expr
 
   trait ToStringMixin extends Lang[String]:
+    type Expr = Result
     def if_(cond: Expr, onTrue: Expr, onFalse: Expr): Expr =
       s"(if $cond :then $onTrue :else $onFalse)"
 
-  class ToString extends ToStringMixin
+  class ToString extends ToStringMixin, EvalId[String]
   given ToString()
 
-  trait EvalMixin[T] extends Lang[() => T]:
+  trait EvalMixin[T] extends Lang[T]:
     type Expr = () => T
     def if_(cond: () => T, onTrue: Expr, onFalse: Expr): Expr =
       () => if asBool(cond) then onTrue() else onFalse()
@@ -28,9 +29,12 @@ package Algo_calc:
   class ToString extends ToStringMixin
   given ToString()
 
-  trait EvalMixin[T] extends Lang[() => T] , Calc.EvalMixin[() => T] , Algo.EvalMixin[T]
+  trait EvalMixin[T] extends Lang[T] , Calc.EvalMixin[T] , Algo.EvalMixin[T]
 
   class Eval extends EvalMixin[Calc.Value]:
+    type Result = Calc.Value
+    def eval(e: Expr) = e()
+
     def fromBool(v: Boolean) = () => v
     def asBool(t: Expr) = t().asInstanceOf[Boolean]
     def fromInt(v: Int) = () => v
@@ -55,13 +59,4 @@ package Algo_calc:
         )
     )
 
-  def runTest(t: (Calc.Value, [T] => (l: Lang[T]) => T)) =
-    val expected = t._1
-    val program = t._2
-    val source = program(ToString())
-    val result = program(Eval())()
-    println(s"Running $source produced $result")
-    if result != expected then
-      println(s"ERROR: expected $expected but found $result")
-
-  def testing() = tests().foreach(runTest)
+  def testing() = tests().foreach(runTest[Calc.Value, Lang])

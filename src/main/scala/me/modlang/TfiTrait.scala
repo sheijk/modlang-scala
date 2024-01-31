@@ -13,7 +13,7 @@ def runProgram[Value, Lang[_] <: Empty.Lang[?]](
   e: Lang[Value],
 ): Unit =
   val source = f(s)
-  val result = f(e)
+  val result = e.eval(f(e))
   println(s"Running $source produced $result")
 
 def runTest[Value, Lang[_] <: Empty.Lang[?]](
@@ -25,7 +25,7 @@ def runTest[Value, Lang[_] <: Empty.Lang[?]](
   val expected = t._1
   val program = t._2
   val source = program(s)
-  val result = program(e)
+  val result = e.eval(program(e))
   println(s"Running $source produced $result")
   if result != expected then println(s"ERROR: expected $expected but found $result")
 
