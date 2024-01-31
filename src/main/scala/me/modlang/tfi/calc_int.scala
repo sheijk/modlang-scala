@@ -8,8 +8,6 @@ package Calc_int:
     def plus(lhs: Expr, rhs: Expr): Expr
 
   trait ToStringMixin extends Lang[String], EvalId[String]:
-    type Expr = String
-
     def int(v: Int): String = v.toString()
     def plus(lhs: String, rhs: String): String = s"($lhs + $rhs)"
 
@@ -25,10 +23,7 @@ package Calc_int:
 
   type Value = Int
 
-  class Eval extends EvalMixin[Value], EvalId[Value]:
-    def fromInt(v: Int) = v
-    def asInt(v: Expr) = v
-
+  class Eval extends EvalMixin[Value], EvalId[Value], EvalInt
   given Eval()
 
   def tests() =

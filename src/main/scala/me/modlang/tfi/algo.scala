@@ -31,15 +31,8 @@ package Algo_calc:
 
   trait EvalMixin[T] extends Lang[T] , Calc.EvalMixin[T] , Algo.EvalMixin[T]
 
-  class Eval extends EvalMixin[Calc.Value]:
-    type Result = Calc.Value
-    def eval(e: Expr) = e()
-
-    def fromBool(v: Boolean) = () => v
-    def asBool(t: Expr) = t().asInstanceOf[Boolean]
-    def fromInt(v: Int) = () => v
-    def asInt(t: Expr) = t().asInstanceOf[Int]
-
+  type Value = Calc.Value
+  class Eval extends EvalMixin[Value], EvalFn[Value]
   given Eval()
 
   def tests() =

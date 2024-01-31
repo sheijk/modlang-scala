@@ -25,10 +25,7 @@ package Calc_bool:
 
   type Value = Boolean
 
-  class Eval extends EvalMixin[Value], EvalId[Value]:
-    override def fromBool(v: Value): Expr = v
-    override def asBool(t: Value): Boolean = t
-
+  class Eval extends EvalMixin[Value], EvalId[Value], EvalBool
   given Eval()
 
   def tests() =
