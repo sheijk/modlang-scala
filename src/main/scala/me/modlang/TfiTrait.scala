@@ -47,3 +47,5 @@ def demo() =
   Calc.testing()
   println("  Algo_calc")
   Algo_calc.testing()
+  println("  Algo_calc_bindings")
+  Algo_calc_bindings.testing()
