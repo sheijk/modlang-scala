@@ -2,11 +2,25 @@ package me
 package modlang
 package tfi
 
+// -----------------------------------------------------------------------------
+// Types
+
 package Empty:
   trait Lang[T]:
     type Expr
     type Result = T
     def eval(e: Expr): Result
+
+trait EvalHasBool[T] extends Empty.Lang[T]:
+  def fromBool(v: Boolean): Expr
+  def asBool(t: Expr): Boolean
+
+trait EvalHasInt[T] extends Empty.Lang[T]:
+  def fromInt(v: Int): Expr
+  def asInt(t: Expr): Int
+
+// -----------------------------------------------------------------------------
+// Mixins
 
 trait EvalId[T] extends Empty.Lang[T]:
   type Expr = Result

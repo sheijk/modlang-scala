@@ -18,9 +18,6 @@ package Bindings:
     def let(name: String, value: Expr, in: Expr => Expr): Expr =
       () => in(value)()
 
-    def fromBool(v: Boolean): Expr
-    def asBool(t: Expr): Boolean
-
 package Algo_calc_bindings:
   trait Lang[T] extends Bindings.Lang[T], Algo_calc.Lang[T]
 

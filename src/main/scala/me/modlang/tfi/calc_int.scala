@@ -14,12 +14,9 @@ package Calc_int:
   class ToString extends ToStringMixin
   given ToString()
 
-  trait EvalMixin[T] extends Lang[T]:
-    override def int(v: Int): Expr = fromInt(v)
-    override def plus(lhs: Expr, rhs: Expr): Expr = fromInt(asInt(lhs) + asInt(rhs))
-
-    def fromInt(v: Int): Expr
-    def asInt(t: Expr): Int
+  trait EvalMixin[T] extends Lang[T], EvalHasInt[T]:
+    def int(v: Int): Expr = fromInt(v)
+    def plus(lhs: Expr, rhs: Expr): Expr = fromInt(asInt(lhs) + asInt(rhs))
 
   type Value = Int
 

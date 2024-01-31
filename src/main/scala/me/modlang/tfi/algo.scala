@@ -14,13 +14,10 @@ package Algo:
   class ToString extends ToStringMixin, EvalId[String]
   given ToString()
 
-  trait EvalMixin[T] extends Lang[T]:
+  trait EvalMixin[T] extends Lang[T], EvalHasBool[T]:
     type Expr = () => T
     def if_(cond: () => T, onTrue: Expr, onFalse: Expr): Expr =
       () => if asBool(cond) then onTrue() else onFalse()
-
-    def fromBool(v: Boolean): Expr
-    def asBool(t: Expr): Boolean
 
 package Algo_calc:
   trait Lang[T] extends Algo.Lang[T], Calc.Lang[T]

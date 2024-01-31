@@ -16,12 +16,9 @@ package Calc_bool:
   class ToString extends ToStringMixin
   given ToString()
 
-  trait EvalMixin[T] extends Lang[T]:
-    override def bool(v: Boolean): Expr = fromBool(v)
-    override def and(lhs: Expr, rhs: Expr): Expr = fromBool(asBool(lhs) & asBool(rhs))
-
-    def fromBool(v: Boolean): Expr
-    def asBool(t: Expr): Boolean
+  trait EvalMixin[T] extends Lang[T], EvalHasBool[T]:
+    def bool(v: Boolean): Expr = fromBool(v)
+    def and(lhs: Expr, rhs: Expr): Expr = fromBool(asBool(lhs) & asBool(rhs))
 
   type Value = Boolean
 
