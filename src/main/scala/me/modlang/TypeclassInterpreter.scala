@@ -1,6 +1,6 @@
 package me
 package modlang
-package tfi
+package typeclass
 
 // consider adding more types, like TypedExpr[T], etc.
 
