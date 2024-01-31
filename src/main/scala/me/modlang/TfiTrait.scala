@@ -49,3 +49,5 @@ def demo() =
   Algo_calc.testing()
   println("  Algo_calc_bindings")
   Algo_calc_bindings.testing()
+  println("  Imperative")
+  Imperative.testing()
