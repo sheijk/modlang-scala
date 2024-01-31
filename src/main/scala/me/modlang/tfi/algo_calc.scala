@@ -12,7 +12,7 @@ package Algo_calc:
   trait EvalMixin[T] extends Lang[T] , Calc.EvalMixin[T] , Algo.EvalMixin[T]
 
   type Value = Calc.Value
-  class Eval extends EvalMixin[Value], EvalFn[Value]
+  class Eval extends EvalMixin[Value], EvalFnIntBool[Value]
   given Eval()
 
   def tests() =
