@@ -5,6 +5,7 @@ package tfi
 // consider adding more types, like TypedExpr[T], etc.
 
 type Test[Value, Lang[_] <: Empty.Lang[?]] = (Value, [T] => (l: Lang[T]) => l.Expr)
+type TestLoc[Value, Lang[_] <: Empty.Lang[?]] = (Value, [T] => (l: Lang[T]) => l.Expr, Location)
 
 def runProgram[Value, Lang[_] <: Empty.Lang[?]](
   f: [T] => (l: Lang[T]) => l.Expr
@@ -54,15 +55,3 @@ def demo() =
   given Calc.Eval()
   runProgram[Calc.Value, Calc.Lang](simple.asInstanceOf[Calc.Program])
   runProgram[Calc.Value, Calc.Lang](calc)
-  println("  Calc_bool")
-  Calc_bool.testing()
-  println("  Calc_int")
-  Calc_int.testing()
-  println("  Calc")
-  Calc.testing()
-  println("  Algo_calc")
-  Algo_calc.testing()
-  println("  Algo_calc_bindings")
-  Algo_calc_bindings.testing()
-  println("  Imperative")
-  Imperative.testing()

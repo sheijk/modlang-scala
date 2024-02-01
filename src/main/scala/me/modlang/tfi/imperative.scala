@@ -55,5 +55,3 @@ package Imperative:
               sum.set(plus(sum.get(), idx.get()))
               )))))),
     )
-
-  def testing() = testcases.foreach(runTestLoc[Value, Lang])

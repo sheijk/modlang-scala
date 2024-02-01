@@ -32,5 +32,3 @@ package Algo_calc_bindings:
         let("y", plus(int(100), int(200)), y =>
         plus(x, y)))),
     )
-
-  def testing() = testcases.foreach(runTestLoc[Value, Lang])

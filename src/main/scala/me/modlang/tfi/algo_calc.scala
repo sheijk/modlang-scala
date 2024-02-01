@@ -15,13 +15,14 @@ package Algo_calc:
   class Eval extends EvalMixin[Value], EvalFnIntBool[Value]
   given Eval()
 
-  def tests() =
+  def testcases =
+    import CaptureLocation.f
     List(
-      (true,
+      f(true,
       [T] =>
         (l: Lang[T]) =>
           l.and(l.greaterThan(l.int(10), l.int(5)), l.greaterThan(l.int(3), l.int(2)))),
-      (10,
+      f(10,
       [T] =>
         (l: Lang[T]) =>
           l.if_(
@@ -31,5 +32,3 @@ package Algo_calc:
           )
         )
     )
-
-  def testing() = tests().foreach(runTest[Calc.Value, Lang])

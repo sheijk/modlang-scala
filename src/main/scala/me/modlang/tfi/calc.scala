@@ -20,18 +20,16 @@ package Calc:
   class Eval extends EvalMixin[Value], EvalId[Value], EvalIntBool[Value]
   given Eval()
 
-  type MyTest = Test[Value, Lang]
-  def tests() =
-    Calc_int.tests().asInstanceOf[List[MyTest]] ++
-      Calc_bool.tests().asInstanceOf[List[MyTest]] ++
-      List(
-        (
-          true,
-          [T] =>
-            (l: Lang[T]) =>
-              l.and(l.greaterThan(l.int(10), l.int(5)), l.greaterThan(l.int(3), l.int(2))),
-        )
+  type MyTest = TestLoc[Value, Lang]
+  def testcases: List[MyTest] =
+    import CaptureLocation.f
+    Calc_int.testcases.asInstanceOf[List[MyTest]] ++
+    Calc_bool.testcases.asInstanceOf[List[MyTest]] ++
+    List(
+        f(true,
+          [T] => (l: Lang[T]) =>
+            l.and(
+              l.greaterThan(l.int(10), l.int(5)),
+              l.greaterThan(l.int(3), l.int(2)))),
       )
-
-  def testing() = tests().foreach(runTest[Value, Lang])
   type Program = [T] => (l: Lang[T]) => l.Expr

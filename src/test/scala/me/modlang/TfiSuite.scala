@@ -20,9 +20,11 @@ final class ImperativeSuite extends TestSuite:
   def toMunit(loc: Location) =
     munit.Location(loc.file, loc.line)
 
-  test("Imperative"):
-    import Imperative.*
-    import Imperative.given
+  // Algo has no tests
+
+  test("Algo_calc"):
+    import Algo_calc.*
+    import Algo_calc.given
     testcases.map(runTestCase[Value, Lang]).foreach(test =>
       expectEquals(test._1, test._2, test._3)(using toMunit(test._4)))
 
@@ -31,3 +33,34 @@ final class ImperativeSuite extends TestSuite:
     import Algo_calc_bindings.given
     testcases.map(runTestCase[Value, Lang]).foreach(test =>
       expectEquals(test._1, test._2, test._3)(using toMunit(test._4)))
+
+  // Bindings has no tests
+  // Blocks has no tests
+
+  test("Calc"):
+    import Calc.*
+    import Calc.given
+    testcases.map(runTestCase[Value, Lang]).foreach(test =>
+      expectEquals(test._1, test._2, test._3)(using toMunit(test._4)))
+
+  test("Calc_bool"):
+    import Calc_bool.*
+    import Calc_bool.given
+    testcases.map(runTestCase[Value, Lang]).foreach(test =>
+      expectEquals(test._1, test._2, test._3)(using toMunit(test._4)))
+
+  test("Calc_int"):
+    import Calc_int.*
+    import Calc_int.given
+    testcases.map(runTestCase[Value, Lang]).foreach(test =>
+      expectEquals(test._1, test._2, test._3)(using toMunit(test._4)))
+
+  // Empty has no tests
+
+  test("Imperative"):
+    import Imperative.*
+    import Imperative.given
+    testcases.map(runTestCase[Value, Lang]).foreach(test =>
+      expectEquals(test._1, test._2, test._3)(using toMunit(test._4)))
+
+  // References has no tests

@@ -25,12 +25,10 @@ package Calc_bool:
   class Eval extends EvalMixin[Value], EvalId[Value], EvalBool
   given Eval()
 
-  def tests() =
+  def testcases =
+    import CaptureLocation.f
     List(
-      (true, [T] => (l: Lang[T]) => l.bool(true)),
-      (true, [T] => (l: Lang[T]) => l.and(l.bool(true), l.bool(true))),
-      (false, [T] => (l: Lang[T]) => l.and(l.bool(true), l.bool(false))),
+      f(true, [T] => (l: Lang[T]) => l.bool(true)),
+      f(true, [T] => (l: Lang[T]) => l.and(l.bool(true), l.bool(true))),
+      f(false, [T] => (l: Lang[T]) => l.and(l.bool(true), l.bool(false))),
     )
-
-  def testing() =
-    tests().foreach(runTest[Boolean, Lang])
