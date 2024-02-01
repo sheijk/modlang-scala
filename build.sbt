@@ -46,6 +46,7 @@ lazy val autoImportSettings = Seq(
       "scala.annotation",
       "scala.util.chaining",
     ).mkString(start = "-Yimports:", sep = ",", end = ""),
+  scalacOptions ++= Seq("-explain"),
   Test / scalacOptions +=
     Seq(
       "org.scalacheck",
