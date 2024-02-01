@@ -41,6 +41,18 @@ package Imperative:
           foo.set(plus(foo.get(), int(10))),
           foo.get()
         ))),
+      (55,
+      [T] => (l: Lang[T]) =>
+        import l.*
+        mut("idx", int(0), idx =>
+        mut("sum", int(0), sum =>
+        loop("l", l =>
+          if_(greaterThan(idx.get(), int(10)),
+            break(l, sum.get()),
+            block(
+              idx.set(plus(idx.get(), int(1))),
+              sum.set(plus(sum.get(), idx.get()))
+              )))))),
     )
 
   def testing() = tests().foreach(runTest[Value, Lang])
