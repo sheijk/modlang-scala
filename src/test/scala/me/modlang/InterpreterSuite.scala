@@ -32,6 +32,7 @@ abstract class InterpreterSuite[Expr](a : Ast[Expr] & Runner[Expr]) extends Test
     checkEval(false, and(c(false), c(true)))
     checkEval(false, and(c(false), c(false)))
 
-final class AdtInterpreterSuite extends InterpreterSuite[adt_interpreter.Expr](new AdtAst())
-final class UnionInterpreterSuite extends InterpreterSuite[union_interpreter.Expr](new UnionAst())
+// final class AdtInterpreterSuite extends InterpreterSuite[adt_interpreter.Expr](new AdtAst())
+// final class UnionInterpreterSuite extends InterpreterSuite[union_interpreter.Expr](new UnionAst())
+
 

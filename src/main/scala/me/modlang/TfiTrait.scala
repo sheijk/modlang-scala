@@ -29,6 +29,21 @@ def runTest[Value, Lang[_] <: Empty.Lang[?]](
   println(s"Running $source produced $result")
   if result != expected then println(s"ERROR: expected $expected but found $result")
 
+def runTestLoc[Value, Lang[_] <: Empty.Lang[?]](
+  t: (Value, [T] => (l: Lang[T]) => l.Expr, Location)
+)(using
+  s: Lang[String],
+  e: Lang[Value],
+): Unit =
+  val expected = t._1
+  val program = t._2
+  val location = t._3
+  val source = program(s)
+  val result = e.eval(program(e))
+  println(s"Running $source produced $result")
+  if result != expected then
+    println(s"$location: error: expected $expected but found $result")
+
 def demo() =
   println("Running tfi_trait demo")
   val simple = [T] => (l: Calc_bool.Lang[T]) => l.and(l.bool(true), l.bool(true))
