@@ -15,24 +15,25 @@ package Imperative:
   class Eval extends EvalMixin[Value], EvalFnIntBool[Value]
   given Eval()
 
-  def tests() =
+  def testcases =
+    import CaptureLocation.f
     List(
-      (3,
+      f(3,
       [T] => (l: Lang[T]) =>
         import l.*
         block(int(1), int(2), int(3))),
-      (10,
+      f(10,
       [T] => (l: Lang[T]) =>
         import l.*
         mut("x", int(10), x => x.get())),
-      (20,
+      f(20,
       [T] => (l: Lang[T]) =>
         import l.*
         mut("x", int(5), x =>
         block(
           x.set(plus(int(15), int(5)))
         ))),
-      (11,
+      f(11,
       [T] => (l: Lang[T]) =>
         import l.*
         mut("foo", int(1), foo =>
@@ -41,7 +42,7 @@ package Imperative:
           foo.set(plus(foo.get(), int(10))),
           foo.get()
         ))),
-      (55,
+      f(55,
       [T] => (l: Lang[T]) =>
         import l.*
         mut("idx", int(0), idx =>
@@ -54,5 +55,3 @@ package Imperative:
               sum.set(plus(sum.get(), idx.get()))
               )))))),
     )
-
-  def testing() = tests().foreach(runTest[Value, Lang])

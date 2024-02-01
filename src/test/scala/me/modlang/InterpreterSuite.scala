@@ -35,3 +35,4 @@ abstract class InterpreterSuite[Expr](a : Ast[Expr] & Runner[Expr]) extends Test
 final class AdtInterpreterSuite extends InterpreterSuite[adt_interpreter.Expr](new AdtAst())
 final class UnionInterpreterSuite extends InterpreterSuite[union_interpreter.Expr](new UnionAst())
 
+

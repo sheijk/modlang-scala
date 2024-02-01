@@ -23,11 +23,9 @@ package Calc_int:
   class Eval extends EvalMixin[Value], EvalId[Value], EvalInt
   given Eval()
 
-  def tests() =
+  def testcases =
+    import CaptureLocation.f
     List(
-      (10, [T] => (l: Lang[T]) => l.int(10)),
-      (20, [T] => (l: Lang[T]) => l.plus(l.int(5), l.int(15))),
+      f(10, [T] => (l: Lang[T]) => l.int(10)),
+      f(20, [T] => (l: Lang[T]) => l.plus(l.int(5), l.int(15))),
     )
-
-  def testing() = tests().foreach(runTest[Value, Lang])
-
