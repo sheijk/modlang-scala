@@ -2,8 +2,6 @@ package me
 package modlang
 package tfi
 
-// consider adding more types, like TypedExpr[T], etc.
-
 type Test[Value, Lang[_] <: Empty.Lang[?]] = (Value, [T] => (l: Lang[T]) => l.Expr)
 type TestLoc[Value, Lang[_] <: Empty.Lang[?]] = (Value, [T] => (l: Lang[T]) => l.Expr, Location)
 
@@ -16,19 +14,6 @@ def runProgram[Value, Lang[_] <: Empty.Lang[?]](
   val source = f(s)
   val result = e.eval(f(e))
   println(s"Running $source produced $result")
-
-def runTest[Value, Lang[_] <: Empty.Lang[?]](
-  t: (Value, [T] => (l: Lang[T]) => l.Expr)
-)(using
-  s: Lang[String],
-  e: Lang[Value],
-): Unit =
-  val expected = t._1
-  val program = t._2
-  val source = program(s)
-  val result = e.eval(program(e))
-  println(s"Running $source produced $result")
-  if result != expected then println(s"ERROR: expected $expected but found $result")
 
 def runTestLoc[Value, Lang[_] <: Empty.Lang[?]](
   t: (Value, [T] => (l: Lang[T]) => l.Expr, Location)
