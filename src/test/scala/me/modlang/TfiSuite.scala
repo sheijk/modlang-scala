@@ -25,3 +25,9 @@ final class ImperativeSuite extends TestSuite:
     import Imperative.given
     testcases.map(runTestCase[Value, Lang]).foreach(test =>
       expectEquals(test._1, test._2, test._3)(using toMunit(test._4)))
+
+  test("Algo_calc_bindings"):
+    import Algo_calc_bindings.*
+    import Algo_calc_bindings.given
+    testcases.map(runTestCase[Value, Lang]).foreach(test =>
+      expectEquals(test._1, test._2, test._3)(using toMunit(test._4)))

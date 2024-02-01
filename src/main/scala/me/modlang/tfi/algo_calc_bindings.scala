@@ -15,16 +15,17 @@ package Algo_calc_bindings:
   class Eval extends EvalMixin[Value], EvalFnIntBool[Value]
   given Eval()
 
-  def tests() =
+  def testcases =
+    import CaptureLocation.f
     List(
-      (108,
+      f(108,
       [T] => (l: Lang[T]) =>
         import l.*
         let("x", plus(int(5), int(3)), x =>
           plus(int(100), x))),
-      (20,
+      f(20,
       [T] => (l: Lang[T]) => l.plus(l.int(5), l.int(15))),
-      (321,
+      f(321,
       [T] => (l: Lang[T]) =>
         import l.*
         let("x", plus(int(20), int(1)), x =>
@@ -32,4 +33,4 @@ package Algo_calc_bindings:
         plus(x, y)))),
     )
 
-  def testing() = tests().foreach(runTest[Value, Lang])
+  def testing() = testcases.foreach(runTestLoc[Value, Lang])
