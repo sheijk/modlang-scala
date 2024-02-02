@@ -3,28 +3,18 @@ package modlang
 package tfi
 
 package Optimizer:
-  // class ConstantFoldInt[T, Nested <: Calc_int.Lang[T]] extends Calc_int.Lang[T]:
-  //   case class Expr(inner: Nested.Expr)
-  //   override def int(v: Int): Expr = ???
-  //   override def plus(lhs: Expr, rhs: Expr): Expr = ???
-  // 
-  //   override def eval(e: Expr): Result = ???
-
   case class ConstantFoldInt[T, Nested <: Calc_int.Lang[T]](inner: Nested) extends Calc_int.Lang[T]:
-    enum Expr:
-      case Constant(i: Int)
-      case Dynamic(i: inner.Expr)
+    type Expr = Either[inner.Expr, Int]
 
-      def mapInt(f: Int => Expr) =
-        this match
-          case Constant(i) => f(i)
-          case Dynamic(_) => this
+    def mapIntInt(lhs: Expr, rhs: Expr, f: (Int, Int) => Int): Expr =
+      lhs.flatMap(lhsValue => rhs.map(rhsValue => f(lhsValue, rhsValue)))
 
-    def mapIntInt(lhs: Expr, rhs: Expr, f: (Int, Int) => Expr) =
-      lhs.mapInt(lhsValue => rhs.mapInt(rhsValue => f(lhsValue, rhsValue)))
-
-    override def int(v: Int): Expr = Expr.Constant(v)
+    override def int(v: Int): Expr = Right(v)
     override def plus(lhs: Expr, rhs: Expr): Expr =
-      mapIntInt(lhs, rhs, (lhs, rhs) => Expr.Constant(lhs + rhs))
+      mapIntInt(lhs, rhs, (lhs, rhs) => lhs + rhs)
 
     override def eval(e: Expr): Result =
+      val innerExpr = e.match
+        case Left(dynamic) => dynamic
+        case Right(i) => inner.int(i)
+      inner.eval(innerExpr)
