@@ -24,7 +24,7 @@ def runTestLoc[Value, Lang[_] <: Empty.Lang[?]](
   val expected = t._1
   val program = t._2
   val location = t._3
-  val source = program(s)
+  val source = s.eval(program(s))
   val result = e.eval(program(e))
   println(s"Running $source produced $result")
   if result != expected then

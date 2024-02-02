@@ -19,8 +19,14 @@ package Optimizer:
         case Right(i) => inner.int(i)
       inner.eval(innerExpr)
 
+  case class ToStringCombine(from: Calc_int.Lang[String], to: Calc_int.Lang[String]) extends Calc_int.Lang[String]:
+    type Expr = (from.Expr, to.Expr)
+    override def eval(e: Expr): String = s"${from.eval(e._1)} => ${to.eval(e._2)}"
+    override def int(v: Int): Expr = (from.int(v), to.int(v))
+    override def plus(lhs: Expr, rhs: Expr): Expr = (from.plus(lhs._1, rhs._1), to.plus(lhs._2, rhs._2))
+
   def demo(): Unit =
     println("Optimizer")
-    given ConstantFoldInt[String, Calc_int.ToString](Calc_int.ToString())
+    given ToStringCombine(Calc_int.ToString(), ConstantFoldInt[String, Calc_int.ToString](Calc_int.ToString()))
     given ConstantFoldInt[Calc_int.Value, Calc_int.Eval](Calc_int.Eval())
     Calc_int.testcases.foreach(runTestLoc[Calc_int.Value, Calc_int.Lang])
