@@ -18,3 +18,9 @@ package Optimizer:
         case Left(dynamic) => dynamic
         case Right(i) => inner.int(i)
       inner.eval(innerExpr)
+
+  def demo(): Unit =
+    println("Optimizer")
+    given ConstantFoldInt[String, Calc_int.ToString](Calc_int.ToString())
+    given ConstantFoldInt[Calc_int.Value, Calc_int.Eval](Calc_int.Eval())
+    Calc_int.testcases.foreach(runTestLoc[Calc_int.Value, Calc_int.Lang])

@@ -40,3 +40,4 @@ def demo() =
   given Calc.Eval()
   runProgram[Calc.Value, Calc.Lang](simple.asInstanceOf[Calc.Program])
   runProgram[Calc.Value, Calc.Lang](calc)
+  Optimizer.demo()
