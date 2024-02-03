@@ -48,7 +48,27 @@ package Optimizer:
       case (Right(lhsStatic), Right(rhsStatic)) => toOuter(inner.int(lhsStatic + rhsStatic))
       case _ => toOuter(inner.plus(toInner(lhs), toInner(rhs)))
 
+  trait ConstantFoldBoolMixin[T, Inner <: Lang[T]](inner_ : Inner) extends Nested[T, Inner]:
+    type Expr = Either[inner.Expr, Boolean]
+
+    def toOuter(e: inner.Expr): Expr =
+      Left(e)
+
+    def toInner(e: Expr): inner.Expr =
+      e match
+         case Left(innerExpr) => innerExpr
+         case Right(i) => inner.bool(i)
+
+    override def bool(v: Boolean): Expr =
+      Right(v)
+
+    override def and(lhs: Expr, rhs: Expr): Expr =
+      (lhs, rhs) match
+      case (Right(lhsStatic), Right(rhsStatic)) => toOuter(inner.bool(lhsStatic & rhsStatic))
+      case _ => toOuter(inner.and(toInner(lhs), toInner(rhs)))
+
   case class ConstantFoldInt[T, Inner <: Lang[T]](inner_ : Inner) extends Nested[T, Inner](inner_), ConstantFoldIntMixin[T, Inner](inner_)
+  case class ConstantFoldBool[T, Inner <: Lang[T]](inner_ : Inner) extends Nested[T, Inner](inner_), ConstantFoldBoolMixin[T, Inner](inner_)
 
   case class ToStringCombine(from: Lang[String], to: Lang[String]) extends Lang[String]:
     type Expr = (from.Expr, to.Expr)
@@ -82,6 +102,7 @@ package Optimizer:
   def demo(): Unit =
     println("Optimizer")
     given ToStringCombine(Calc.ToString(), ConstantFoldInt[String, Calc.ToString](Calc.ToString()))
-    given ConstantFoldInt[Value, Calc.Eval](Calc.Eval())
+    // given e : Lang[Value] = ConstantFoldInt[Value, Calc.Eval](Calc.Eval())
+    given e : Lang[Value] = ConstantFoldBool[Value, Calc.Eval](Calc.Eval())
     testcases.foreach(runTestLoc[Value, Lang])
 
