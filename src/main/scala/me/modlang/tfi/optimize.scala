@@ -3,38 +3,40 @@ package modlang
 package tfi
 
 package Optimizer:
+  type Lang[T] = Calc.Lang[T]
+  type Value = Calc.Value
+
   case class ConstantFoldInt[T, Nested <: Calc.Lang[T]](inner: Nested) extends Calc.Lang[T]:
     type Expr = Either[inner.Expr, Int]
 
-    extension (e: Either[inner.Expr, Int])
-      def toInner =
-        e match
-        case Left(innerExpr) => innerExpr
-        case Right(value) => inner.int(value)
+    def toOuter(e: inner.Expr): Expr =
+      Left(e)
+
+    def toInner(e: Expr): inner.Expr =
+      e match
+         case Left(innerExpr) => innerExpr
+         case Right(i) => inner.int(i)
 
     def mapIntInt(lhs: Expr, rhs: Expr, f: (Int, Int) => Int): Expr =
       lhs.flatMap(lhsValue => rhs.map(rhsValue => f(lhsValue, rhsValue)))
 
     override def int(v: Int): Expr =
-      Right(v)
+      toOuter(inner.int(v))
 
     override def plus(lhs: Expr, rhs: Expr): Expr =
       mapIntInt(lhs, rhs, (lhs, rhs) => lhs + rhs)
 
     override def eval(e: Expr): Result =
-      val innerExpr = e.match
-        case Left(dynamic) => dynamic
-        case Right(i) => inner.int(i)
-      inner.eval(innerExpr)
+      inner.eval(toInner(e))
 
     override def and(lhs: Expr, rhs: Expr): Expr =
-      Left(inner.and(lhs.toInner, rhs.toInner))
+      toOuter(inner.and(toInner(lhs), toInner(rhs)))
 
     override def bool(v: Boolean): Expr =
-      Left(inner.bool(v))
+      toOuter(inner.bool(v))
 
     override def greaterThan(lhs: Expr, rhs: Expr): Expr =
-      Left(inner.greaterThan(lhs.toInner, rhs.toInner))
+      toOuter(inner.greaterThan(toInner(lhs), toInner(rhs)))
 
   case class ToStringCombine(from: Calc.Lang[String], to: Calc.Lang[String]) extends Calc.Lang[String]:
     type Expr = (from.Expr, to.Expr)
@@ -52,6 +54,12 @@ package Optimizer:
     import CaptureLocation.f
     Calc.testcases ++
     List(
+        f(true,
+          [T] => (l: Calc.Lang[T]) =>
+              l.plus(l.int(5), l.int(10))),
+        f(true,
+          [T] => (l: Calc.Lang[T]) =>
+              l.greaterThan(l.plus(l.int(5), l.int(10)), l.int(5))),
         f(true,
           [T] => (l: Calc.Lang[T]) =>
             l.and(
