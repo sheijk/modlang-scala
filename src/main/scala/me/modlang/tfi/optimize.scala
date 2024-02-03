@@ -59,35 +59,28 @@ package Optimizer:
       case _ => toOuter(inner.greaterThan(toInner(lhs), toInner(rhs)))
 
   transparent trait ConstantFoldMixin[T, Inner <: Lang[T]] extends ConstantFoldCalcMixin[T, Inner]:
-    enum Expr:
-      case Dynamic(e: inner.Expr)
-      case ConstantInt(i: Int)
-      case ConstantBool(b: Boolean)
+    case class Dynamic(val innerExpr: inner.Expr)
+    type Expr = Dynamic | Int | Boolean
 
     def toOuter(e: inner.Expr): Expr =
-      Expr.Dynamic(e)
+      Dynamic(e)
 
     def toInner(e: Expr): inner.Expr =
       e match
-         case Expr.Dynamic(innerExpr) => innerExpr
-         case Expr.ConstantInt(i) => inner.int(i)
-         case Expr.ConstantBool(b) => inner.bool(b)
+         case e: Dynamic => e.innerExpr
+         case i: Int => inner.int(i)
+         case b: Boolean => inner.bool(b)
 
-    override def int(v: Int): Expr =
-      Expr.ConstantInt(v)
+    override def int(v: Int): Expr = v
+    override def bool(v: Boolean): Expr = v
 
-    override def bool(v: Boolean): Expr =
-      Expr.ConstantBool(v)
-
-    def toConstantInt(e: Expr): Option[Int] =
-      e match
-        case Expr.ConstantInt(i) => Some(i)
-        case _ => None
-
-    def toConstantBool(e: Expr): Option[Boolean] =
-      e match
-      case Expr.ConstantBool(b) => Some(b)
+    inline def toOption[T <: Expr](x: Expr): Option[T] =
+      x match
+      case t: T => Some(t)
       case _ => None
+
+    def toConstantInt(e: Expr): Option[Int] = toOption[Int](e)
+    def toConstantBool(e: Expr): Option[Boolean] = toOption[Boolean](e)
 
   case class ConstantFold[T, Inner <: Lang[T]](inner_ : Inner) extends
     Empty.Nested[T, Inner](inner_),
