@@ -66,7 +66,7 @@ package Optimizer:
 
     override def plus(lhs: Expr, rhs: Expr): Expr =
       (toConstantInt(lhs), toConstantInt(rhs)) match
-      case (Some(lhsStatic), Some(rhsStatic)) => toOuter(inner.int(lhsStatic + rhsStatic))
+      case (Some(lhsStatic), Some(rhsStatic)) => int(lhsStatic + rhsStatic)
       case _ => toOuter(inner.plus(toInner(lhs), toInner(rhs)))
 
     override def bool(v: Boolean): Expr =
@@ -105,6 +105,9 @@ package Optimizer:
         f(15,
           [T] => (l: Lang[T]) =>
               l.plus(l.int(5), l.int(10))),
+        f(17,
+          [T] => (l: Lang[T]) =>
+              l.plus(l.plus(l.int(5), l.int(10)), l.int(2))),
         f(true,
           [T] => (l: Lang[T]) =>
               l.greaterThan(l.plus(l.int(5), l.int(10)), l.int(5))),
