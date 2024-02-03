@@ -36,10 +36,29 @@ package Optimizer:
   type Lang[T] = Calc.Lang[T]
   type Value = Calc.Value
 
-  transparent trait ConstantFoldIntMixin[T, Inner <: Lang[T]] extends Calc.Nested[T, Inner]
-  transparent trait ConstantFoldBoolMixin[T, Inner <: Lang[T]] extends Calc.Nested[T, Inner]
+  transparent trait ConstantFoldIntMixin[T, Inner <: Lang[T]] extends Calc_int.Nested[T, Inner]:
+    def toConstantInt(e: Expr): Option[Int]
 
-  transparent trait ConstantFoldMixin[T, Inner <: Lang[T]] extends ConstantFoldIntMixin[T, Inner], ConstantFoldBoolMixin[T, Inner]:
+    override def plus(lhs: Expr, rhs: Expr): Expr =
+      (toConstantInt(lhs), toConstantInt(rhs)) match
+      case (Some(lhsStatic), Some(rhsStatic)) => int(lhsStatic + rhsStatic)
+      case _ => toOuter(inner.plus(toInner(lhs), toInner(rhs)))
+
+  transparent trait ConstantFoldBoolMixin[T, Inner <: Lang[T]] extends Calc_bool.Nested[T, Inner]:
+    def toConstantBool(e: Expr): Option[Boolean]
+
+    override def and(lhs: Expr, rhs: Expr): Expr =
+      (toConstantBool(lhs), toConstantBool(rhs)) match
+      case (Some(lhsStatic), Some(rhsStatic)) => toOuter(inner.bool(lhsStatic & rhsStatic))
+      case _ => toOuter(inner.and(toInner(lhs), toInner(rhs)))
+
+  transparent trait ConstantFoldCalcMixin[T, Inner <: Lang[T]] extends Lang[T], ConstantFoldIntMixin[T, Inner], ConstantFoldBoolMixin[T, Inner]:
+    override def greaterThan(lhs: Expr, rhs: Expr): Expr =
+      (toConstantBool(lhs), toConstantBool(rhs)) match
+      case (Some(lhsStatic), Some(rhsStatic)) => bool(lhsStatic > rhsStatic)
+      case _ => toOuter(inner.greaterThan(toInner(lhs), toInner(rhs)))
+
+  transparent trait ConstantFoldMixin[T, Inner <: Lang[T]] extends ConstantFoldCalcMixin[T, Inner]:
     enum Expr:
       case Dynamic(e: inner.Expr)
       case ConstantInt(i: Int)
@@ -48,39 +67,27 @@ package Optimizer:
     def toOuter(e: inner.Expr): Expr =
       Expr.Dynamic(e)
 
-    override def int(v: Int): Expr =
-      Expr.ConstantInt(v)
-
     def toInner(e: Expr): inner.Expr =
       e match
          case Expr.Dynamic(innerExpr) => innerExpr
          case Expr.ConstantInt(i) => inner.int(i)
          case Expr.ConstantBool(b) => inner.bool(b)
 
-    def toConstantInt(e: Expr) =
-      e match
-        case Expr.ConstantInt(i) => Some(i)
-        case _ => None
-
-    // No more knowledge about type Expr details
-
-    override def plus(lhs: Expr, rhs: Expr): Expr =
-      (toConstantInt(lhs), toConstantInt(rhs)) match
-      case (Some(lhsStatic), Some(rhsStatic)) => int(lhsStatic + rhsStatic)
-      case _ => toOuter(inner.plus(toInner(lhs), toInner(rhs)))
+    override def int(v: Int): Expr =
+      Expr.ConstantInt(v)
 
     override def bool(v: Boolean): Expr =
       Expr.ConstantBool(v)
 
-    override def and(lhs: Expr, rhs: Expr): Expr =
-      (lhs, rhs) match
-      case (Expr.ConstantBool(lhsStatic), Expr.ConstantBool(rhsStatic)) => toOuter(inner.bool(lhsStatic & rhsStatic))
-      case _ => toOuter(inner.and(toInner(lhs), toInner(rhs)))
+    def toConstantInt(e: Expr): Option[Int] =
+      e match
+        case Expr.ConstantInt(i) => Some(i)
+        case _ => None
 
-    override def greaterThan(lhs: Expr, rhs: Expr): Expr =
-      (lhs, rhs) match
-      case (Expr.ConstantInt(lhsStatic), Expr.ConstantInt(rhsStatic)) => bool(lhsStatic > rhsStatic)
-      case _ => toOuter(inner.greaterThan(toInner(lhs), toInner(rhs)))
+    def toConstantBool(e: Expr): Option[Boolean] =
+      e match
+      case Expr.ConstantBool(b) => Some(b)
+      case _ => None
 
   case class ConstantFold[T, Inner <: Lang[T]](inner_ : Inner) extends
     Empty.Nested[T, Inner](inner_),
