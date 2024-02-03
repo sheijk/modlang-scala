@@ -17,14 +17,15 @@ package Optimizer:
          case Left(innerExpr) => innerExpr
          case Right(i) => inner.int(i)
 
-    def mapIntInt(lhs: Expr, rhs: Expr, f: (Int, Int) => Int): Expr =
-      lhs.flatMap(lhsValue => rhs.map(rhsValue => f(lhsValue, rhsValue)))
-
     override def int(v: Int): Expr =
-      toOuter(inner.int(v))
+      Right(v)
 
     override def plus(lhs: Expr, rhs: Expr): Expr =
-      mapIntInt(lhs, rhs, (lhs, rhs) => lhs + rhs)
+      (lhs, rhs) match
+      case (Left(lhsDynamic), Left(rhsDynamic)) => toOuter(inner.plus(lhsDynamic, rhsDynamic))
+      case (Left(lhsDynamic), Right(rhsStatic)) => toOuter(inner.plus(lhsDynamic, inner.int(rhsStatic)))
+      case (Right(lhsStatic), Left(rhsDynamic)) => toOuter(inner.plus(inner.int(lhsStatic), rhsDynamic))
+      case (Right(lhsStatic), Right(rhsStatic)) => toOuter(inner.plus(inner.int(lhsStatic), inner.int(rhsStatic)))
 
     override def eval(e: Expr): Result =
       inner.eval(toInner(e))
@@ -54,7 +55,7 @@ package Optimizer:
     import CaptureLocation.f
     Calc.testcases ++
     List(
-        f(true,
+        f(15,
           [T] => (l: Calc.Lang[T]) =>
               l.plus(l.int(5), l.int(10))),
         f(true,
