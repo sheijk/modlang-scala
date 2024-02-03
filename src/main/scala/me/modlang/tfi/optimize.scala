@@ -100,34 +100,26 @@ package Optimizer:
 
   def testcases =
     import CaptureLocation.f
+    // Calc.testcases ++
     List(
         f([T] => (l: Lang[T]) => l.int(15),
           [T] => (l: Lang[T]) =>
               l.plus(l.int(5), l.int(10))),
+        f([T] => (l: Lang[T]) => l.int(17),
+          [T] => (l: Lang[T]) =>
+              l.plus(l.plus(l.int(5), l.int(10)), l.int(2))),
+        f([T] => (l: Lang[T]) => l.bool(true),
+          [T] => (l: Lang[T]) =>
+              l.greaterThan(l.plus(l.int(5), l.int(10)), l.int(5))),
+        f([T] => (l: Lang[T]) => l.bool(true),
+          [T] => (l: Lang[T]) =>
+            l.and(
+              l.greaterThan(l.plus(l.int(5), l.int(10)), l.int(5)),
+              l.greaterThan(l.plus(l.int(3), l.int(4)), l.plus(l.int(2), l.int(3))))),
+        f([T] => (l: Lang[T]) => l.bool(true),
+          [T] => (l: Lang[T]) =>
+              l.and(l.bool(true), l.bool(true))),
     )
-
-  // def testcases: List[Calc.MyTest] =
-  //   import CaptureLocation.f
-  //   Calc.testcases ++
-  //   List(
-  //       f(15,
-  //         [T] => (l: Lang[T]) =>
-  //             l.plus(l.int(5), l.int(10))),
-  //       f(17,
-  //         [T] => (l: Lang[T]) =>
-  //             l.plus(l.plus(l.int(5), l.int(10)), l.int(2))),
-  //       f(true,
-  //         [T] => (l: Lang[T]) =>
-  //             l.greaterThan(l.plus(l.int(5), l.int(10)), l.int(5))),
-  //       f(true,
-  //         [T] => (l: Lang[T]) =>
-  //           l.and(
-  //             l.greaterThan(l.plus(l.int(5), l.int(10)), l.int(5)),
-  //             l.greaterThan(l.plus(l.int(3), l.int(4)), l.plus(l.int(2), l.int(3))))),
-  //       f(true,
-  //         [T] => (l: Lang[T]) =>
-  //             l.and(l.bool(true), l.bool(true))),
-  //     )
 
   def opt[T](langs: (Lang[T], Lang[String])): (Lang[T], Lang[String]) =
     (ConstantFold(langs._1), ToStringCombine(langs._2, ConstantFold(langs._2)))
