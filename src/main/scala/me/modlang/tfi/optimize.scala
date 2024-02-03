@@ -22,10 +22,8 @@ package Optimizer:
 
     override def plus(lhs: Expr, rhs: Expr): Expr =
       (lhs, rhs) match
-      case (Left(lhsDynamic), Left(rhsDynamic)) => toOuter(inner.plus(lhsDynamic, rhsDynamic))
-      case (Left(lhsDynamic), Right(rhsStatic)) => toOuter(inner.plus(lhsDynamic, inner.int(rhsStatic)))
-      case (Right(lhsStatic), Left(rhsDynamic)) => toOuter(inner.plus(inner.int(lhsStatic), rhsDynamic))
-      case (Right(lhsStatic), Right(rhsStatic)) => toOuter(inner.plus(inner.int(lhsStatic), inner.int(rhsStatic)))
+      case (Right(lhsStatic), Right(rhsStatic)) => toOuter(inner.int(lhsStatic + rhsStatic))
+      case _ => toOuter(inner.plus(toInner(lhs), toInner(rhs)))
 
     override def eval(e: Expr): Result =
       inner.eval(toInner(e))
