@@ -2,10 +2,7 @@ package me
 package modlang
 package tfi
 
-package Optimizer:
-  type Lang[T] = Calc.Lang[T]
-  type Value = Calc.Value
-
+package Empty:
   trait Nested[T, Inner <: Lang[T]](inner_ : Inner) extends Lang[T]:
     val inner = inner_
     def toOuter(e: inner.Expr): Expr
@@ -14,22 +11,32 @@ package Optimizer:
     override def eval(e: Expr): Result =
       inner.eval(toInner(e))
 
+package Calc_int:
+  trait Nested[T, Inner <: Lang[T]](inner_ : Inner) extends Lang[T], Empty.Nested[T, Inner]:
     override def int(v: Int): Expr =
       toOuter(inner.int(v))
 
     override def plus(lhs: Expr, rhs: Expr): Expr =
       toOuter(inner.plus(toInner(lhs), toInner(rhs)))
 
+package Calc_bool:
+  trait Nested[T, Inner <: Lang[T]](inner_ : Inner) extends Lang[T], Empty.Nested[T, Inner]:
     override def and(lhs: Expr, rhs: Expr): Expr =
       toOuter(inner.and(toInner(lhs), toInner(rhs)))
 
     override def bool(v: Boolean): Expr =
       toOuter(inner.bool(v))
 
+package Calc:
+  trait Nested[T, Inner <: Lang[T]](inner_ : Inner) extends Lang[T], Calc_int.Nested[T, Inner], Calc_bool.Nested[T, Inner]:
     override def greaterThan(lhs: Expr, rhs: Expr): Expr =
       toOuter(inner.greaterThan(toInner(lhs), toInner(rhs)))
 
-  trait ConstantFoldIntMixin[T, Inner <: Lang[T]](inner_ : Inner) extends Nested[T, Inner]:
+package Optimizer:
+  type Lang[T] = Calc.Lang[T]
+  type Value = Calc.Value
+
+  trait ConstantFoldIntMixin[T, Inner <: Lang[T]](inner_ : Inner) extends Calc.Nested[T, Inner]:
     type Expr = Either[inner.Expr, Int]
 
     def toOuter(e: inner.Expr): Expr =
@@ -48,7 +55,7 @@ package Optimizer:
       case (Right(lhsStatic), Right(rhsStatic)) => toOuter(inner.int(lhsStatic + rhsStatic))
       case _ => toOuter(inner.plus(toInner(lhs), toInner(rhs)))
 
-  trait ConstantFoldBoolMixin[T, Inner <: Lang[T]](inner_ : Inner) extends Nested[T, Inner]:
+  trait ConstantFoldBoolMixin[T, Inner <: Lang[T]](inner_ : Inner) extends Calc.Nested[T, Inner]:
     type Expr = Either[inner.Expr, Boolean]
 
     def toOuter(e: inner.Expr): Expr =
@@ -79,8 +86,18 @@ package Optimizer:
       case (Right(lhsStatic), Right(rhsStatic)) => toOuter(inner.bool(lhsStatic > rhsStatic))
       case _ => toOuter(inner.greaterThan(toInner(lhs), toInner(rhs)))
 
-  case class ConstantFoldInt[T, Inner <: Lang[T]](inner_ : Inner) extends Nested[T, Inner](inner_), ConstantFoldIntMixin[T, Inner](inner_)
-  case class ConstantFoldBool[T, Inner <: Lang[T]](inner_ : Inner) extends Nested[T, Inner](inner_), ConstantFoldBoolMixin[T, Inner](inner_)
+  case class ConstantFoldInt[T, Inner <: Lang[T]](inner_ : Inner) extends
+    Calc.Nested[T, Inner](inner_),
+    Empty.Nested[T, Inner](inner_),
+    Calc_int.Nested[T, Inner](inner_),
+    Calc_bool.Nested[T, Inner](inner_),
+    ConstantFoldIntMixin[T, Inner](inner_)
+  case class ConstantFoldBool[T, Inner <: Lang[T]](inner_ : Inner) extends
+    Calc.Nested[T, Inner](inner_),
+    Empty.Nested[T, Inner](inner_),
+    Calc_int.Nested[T, Inner](inner_),
+    Calc_bool.Nested[T, Inner](inner_),
+    ConstantFoldBoolMixin[T, Inner](inner_)
 
   case class ToStringCombine(from: Lang[String], to: Lang[String]) extends Lang[String]:
     type Expr = (from.Expr, to.Expr)
