@@ -98,31 +98,56 @@ package Optimizer:
     override def greaterThan(lhs: Expr, rhs: Expr): Expr =
       (from.greaterThan(lhs._1, rhs._1), to.greaterThan(lhs._2, rhs._2))
 
-  def testcases: List[Calc.MyTest] =
+  def testcases =
     import CaptureLocation.f
-    Calc.testcases ++
     List(
-        f(15,
+        f([T] => (l: Lang[T]) => l.int(15),
           [T] => (l: Lang[T]) =>
               l.plus(l.int(5), l.int(10))),
-        f(17,
-          [T] => (l: Lang[T]) =>
-              l.plus(l.plus(l.int(5), l.int(10)), l.int(2))),
-        f(true,
-          [T] => (l: Lang[T]) =>
-              l.greaterThan(l.plus(l.int(5), l.int(10)), l.int(5))),
-        f(true,
-          [T] => (l: Lang[T]) =>
-            l.and(
-              l.greaterThan(l.plus(l.int(5), l.int(10)), l.int(5)),
-              l.greaterThan(l.plus(l.int(3), l.int(4)), l.plus(l.int(2), l.int(3))))),
-        f(true,
-          [T] => (l: Lang[T]) =>
-              l.and(l.bool(true), l.bool(true))),
-      )
+    )
 
-  def opt(langs: (Lang[Value], Lang[String])): (Lang[Value], Lang[String]) =
+  // def testcases: List[Calc.MyTest] =
+  //   import CaptureLocation.f
+  //   Calc.testcases ++
+  //   List(
+  //       f(15,
+  //         [T] => (l: Lang[T]) =>
+  //             l.plus(l.int(5), l.int(10))),
+  //       f(17,
+  //         [T] => (l: Lang[T]) =>
+  //             l.plus(l.plus(l.int(5), l.int(10)), l.int(2))),
+  //       f(true,
+  //         [T] => (l: Lang[T]) =>
+  //             l.greaterThan(l.plus(l.int(5), l.int(10)), l.int(5))),
+  //       f(true,
+  //         [T] => (l: Lang[T]) =>
+  //           l.and(
+  //             l.greaterThan(l.plus(l.int(5), l.int(10)), l.int(5)),
+  //             l.greaterThan(l.plus(l.int(3), l.int(4)), l.plus(l.int(2), l.int(3))))),
+  //       f(true,
+  //         [T] => (l: Lang[T]) =>
+  //             l.and(l.bool(true), l.bool(true))),
+  //     )
+
+  def opt[T](langs: (Lang[T], Lang[String])): (Lang[T], Lang[String]) =
     (ConstantFold(langs._1), ToStringCombine(langs._2, ConstantFold(langs._2)))
+
+  def runTestLoc[Value, Lang[_] <: Empty.Lang[?]](
+    t: ([T] => (l: Lang[T]) => l.Expr, [T] => (l: Lang[T]) => l.Expr, Location)
+  )(using
+    s: Lang[String],
+    e: Lang[Value],
+  ): Unit =
+    val expected = t._1
+    val program = t._2
+    val location = t._3
+    val expectedValue = e.eval(expected(e))
+    val source = s.eval(program(s))
+    val result = e.eval(program(e))
+    println(s"Running $source produced $result")
+    if result != expectedValue then
+      val expectedStr = s.eval(expected(s))
+      println(s"$location: error: expected $expectedStr but found $result")
 
   def demo(): Unit =
     println("Optimizer")
