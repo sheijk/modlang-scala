@@ -6,7 +6,7 @@ package Optimizer:
   type Lang[T] = Calc.Lang[T]
   type Value = Calc.Value
 
-  case class ConstantFoldInt[T, Nested <: Calc.Lang[T]](inner: Nested) extends Calc.Lang[T]:
+  case class ConstantFoldInt[T, Inner <: Lang[T]](inner: Inner) extends Lang[T]:
     type Expr = Either[inner.Expr, Int]
 
     def toOuter(e: inner.Expr): Expr =
@@ -37,7 +37,7 @@ package Optimizer:
     override def greaterThan(lhs: Expr, rhs: Expr): Expr =
       toOuter(inner.greaterThan(toInner(lhs), toInner(rhs)))
 
-  case class ToStringCombine(from: Calc.Lang[String], to: Calc.Lang[String]) extends Calc.Lang[String]:
+  case class ToStringCombine(from: Lang[String], to: Lang[String]) extends Lang[String]:
     type Expr = (from.Expr, to.Expr)
     override def eval(e: Expr): String = s"${from.eval(e._1)} => ${to.eval(e._2)}"
     override def int(v: Int): Expr = (from.int(v), to.int(v))
@@ -54,13 +54,13 @@ package Optimizer:
     Calc.testcases ++
     List(
         f(15,
-          [T] => (l: Calc.Lang[T]) =>
+          [T] => (l: Lang[T]) =>
               l.plus(l.int(5), l.int(10))),
         f(true,
-          [T] => (l: Calc.Lang[T]) =>
+          [T] => (l: Lang[T]) =>
               l.greaterThan(l.plus(l.int(5), l.int(10)), l.int(5))),
         f(true,
-          [T] => (l: Calc.Lang[T]) =>
+          [T] => (l: Lang[T]) =>
             l.and(
               l.greaterThan(l.plus(l.int(5), l.int(10)), l.int(5)),
               l.greaterThan(l.plus(l.int(3), l.int(4)), l.plus(l.int(2), l.int(3))))),
@@ -69,6 +69,6 @@ package Optimizer:
   def demo(): Unit =
     println("Optimizer")
     given ToStringCombine(Calc.ToString(), ConstantFoldInt[String, Calc.ToString](Calc.ToString()))
-    given ConstantFoldInt[Calc.Value, Calc.Eval](Calc.Eval())
-    testcases.foreach(runTestLoc[Calc.Value, Calc.Lang])
+    given ConstantFoldInt[Value, Calc.Eval](Calc.Eval())
+    testcases.foreach(runTestLoc[Value, Lang])
 
