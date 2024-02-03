@@ -11,6 +11,11 @@ package Empty:
     override def eval(e: Expr): Result =
       inner.eval(toInner(e))
 
+  trait Dup[T, L <: Lang[T]](val left : L, val right : L, mergeLangs: (T, T) => T) extends Lang[T]:
+    type Expr = (left.Expr, right.Expr)
+    override def eval(e: Expr) =
+      mergeLangs(left.eval(e._1), right.eval(e._2))
+
 package Calc_int:
   transparent trait Nested[T, Inner <: Lang[T]] extends Lang[T], Empty.Nested[T, Inner]:
     override def int(v: Int): Expr =
@@ -18,6 +23,13 @@ package Calc_int:
 
     override def plus(lhs: Expr, rhs: Expr): Expr =
       toOuter(inner.plus(toInner(lhs), toInner(rhs)))
+
+  trait Dup[T, L <: Lang[T]] extends Lang[T], Empty.Dup[T, L]:
+    override def int(v: Int): Expr =
+      (left.int(v), right.int(v))
+
+    override def plus(lhs: Expr, rhs: Expr): Expr =
+      (left.plus(lhs._1, rhs._1), right.plus(lhs._2, rhs._2))
 
 package Calc_bool:
   transparent trait Nested[T, Inner <: Lang[T]] extends Lang[T], Empty.Nested[T, Inner]:
@@ -27,10 +39,20 @@ package Calc_bool:
     override def bool(v: Boolean): Expr =
       toOuter(inner.bool(v))
 
+  trait Dup[T, L <: Lang[T]] extends Lang[T], Empty.Dup[T, L]:
+    override def and(lhs: Expr, rhs: Expr): Expr =
+      (left.and(lhs._1, rhs._1), right.and(lhs._2, rhs._2))
+    override def bool(v: Boolean): Expr =
+      (left.bool(v), right.bool(v))
+
 package Calc:
   transparent trait Nested[T, Inner <: Lang[T]] extends Lang[T], Calc_int.Nested[T, Inner], Calc_bool.Nested[T, Inner]:
     override def greaterThan(lhs: Expr, rhs: Expr): Expr =
       toOuter(inner.greaterThan(toInner(lhs), toInner(rhs)))
+
+  trait Dup[T, L <: Lang[T]] extends Lang[T], Calc_int.Dup[T, L], Calc_bool.Dup[T, L]:
+    override def greaterThan(lhs: Expr, rhs: Expr): Expr =
+      (left.greaterThan(lhs._1, rhs._1), right.greaterThan(lhs._2, rhs._2))
 
 package Optimizer:
   type Lang[T] = Calc.Lang[T]
@@ -86,17 +108,11 @@ package Optimizer:
     Empty.Nested[T, Inner](inner_),
     ConstantFoldMixin[T, Inner]
 
-  case class ToStringCombine(from: Lang[String], to: Lang[String]) extends Lang[String]:
-    type Expr = (from.Expr, to.Expr)
-    override def eval(e: Expr): String = s"${from.eval(e._1)} => ${to.eval(e._2)}"
-    override def int(v: Int): Expr = (from.int(v), to.int(v))
-    override def plus(lhs: Expr, rhs: Expr): Expr =
-      (from.plus(lhs._1, rhs._1), to.plus(lhs._2, rhs._2))
-    override def and(lhs: Expr, rhs: Expr): Expr =
-      (from.and(lhs._1, rhs._1), to.and(lhs._2, rhs._2))
-    override def bool(v: Boolean): Expr = (from.bool(v), to.bool(v))
-    override def greaterThan(lhs: Expr, rhs: Expr): Expr =
-      (from.greaterThan(lhs._1, rhs._1), to.greaterThan(lhs._2, rhs._2))
+  def combineLangStrings(lhs: String, rhs: String): String = s"${lhs} => ${rhs}"
+  case class ToStringCombine(from: Lang[String], to: Lang[String]) extends
+      Lang[String],
+      Empty.Dup[String, Lang[String]](from, to, combineLangStrings),
+      Calc.Dup[String, Lang[String]]
 
   def testcases =
     import CaptureLocation.f
