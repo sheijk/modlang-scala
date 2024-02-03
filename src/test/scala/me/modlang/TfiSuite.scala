@@ -64,3 +64,10 @@ final class ImperativeSuite extends TestSuite:
       expectEquals(test._1, test._2, test._3)(using toMunit(test._4)))
 
   // References has no tests
+
+  test("Optimizer"):
+    import Optimizer.*
+    given ToStringCombine(Calc.ToString(), ConstantFoldInt[String, Calc.ToString](Calc.ToString()))
+    given ConstantFoldInt[Calc.Value, Calc.Eval](Calc.Eval())
+    testcases.map(runTestCase[Value, Lang]).foreach(test =>
+      expectEquals(test._1, test._2, test._3)(using toMunit(test._4)))
