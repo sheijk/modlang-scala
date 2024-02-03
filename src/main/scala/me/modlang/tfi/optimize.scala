@@ -29,7 +29,7 @@ package Optimizer:
     override def greaterThan(lhs: Expr, rhs: Expr): Expr =
       toOuter(inner.greaterThan(toInner(lhs), toInner(rhs)))
 
-  case class ConstantFoldInt[T, Inner <: Lang[T]](inner_ : Inner) extends Nested[T, Inner](inner_):
+  trait ConstantFoldIntMixin[T, Inner <: Lang[T]](inner_ : Inner) extends Nested[T, Inner]:
     type Expr = Either[inner.Expr, Int]
 
     def toOuter(e: inner.Expr): Expr =
@@ -47,6 +47,8 @@ package Optimizer:
       (lhs, rhs) match
       case (Right(lhsStatic), Right(rhsStatic)) => toOuter(inner.int(lhsStatic + rhsStatic))
       case _ => toOuter(inner.plus(toInner(lhs), toInner(rhs)))
+
+  case class ConstantFoldInt[T, Inner <: Lang[T]](inner_ : Inner) extends Nested[T, Inner](inner_), ConstantFoldIntMixin[T, Inner](inner_)
 
   case class ToStringCombine(from: Lang[String], to: Lang[String]) extends Lang[String]:
     type Expr = (from.Expr, to.Expr)
