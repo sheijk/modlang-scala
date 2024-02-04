@@ -16,6 +16,19 @@ package Empty:
     override def eval(e: Expr) =
       mergeLangs(left.eval(e._1), right.eval(e._2))
 
+package Dummy:
+  trait Lang[T] extends Empty.Lang[T]:
+    def dummy(msg: String, e: Expr): Expr
+
+  transparent trait Nested[T, Inner <: Lang[T]] extends Lang[T], Empty.Nested[T, Inner]:
+    def dummy(msg: String, e: Expr) = toOuter(inner.dummy(msg, toInner(e)))
+
+  trait Dup[T, L <: Lang[T]] extends Lang[T], Empty.Dup[T, L]:
+    def dummy(msg: String, e: Expr) = (left.dummy(msg, e._1), right.dummy(msg, e._2))
+
+  trait ToStringMixin extends Empty.Lang[String]:
+    def dummy(msg: String, e: Expr) = s"<msg $msg $e>"
+
 package Calc_int:
   transparent trait Nested[T, Inner <: Lang[T]] extends Lang[T], Empty.Nested[T, Inner]:
     override def int(v: Int): Expr =
@@ -55,8 +68,12 @@ package Calc:
       (left.greaterThan(lhs._1, rhs._1), right.greaterThan(lhs._2, rhs._2))
 
 package Optimizer:
-  type Lang[T] = Calc.Lang[T]
-  type Value = Calc.Value
+  trait Lang[T] extends Calc.Lang[T], Dummy.Lang[T]
+  type Value = Calc.Value | String
+
+  class ToString extends Lang[String], Calc.ToStringMixin, Dummy.ToStringMixin
+  class Eval extends Lang[Value], Calc.EvalMixin[Value], EvalId[Value], EvalIntBool[Value]:
+    def dummy(msg: String, e: Expr) = e
 
   transparent trait ConstantFoldIntMixin[T, Inner <: Lang[T]] extends Calc_int.Nested[T, Inner]:
     def toConstantInt(e: Expr): Option[Int]
@@ -95,6 +112,7 @@ package Optimizer:
 
     override def int(v: Int): Expr = v
     override def bool(v: Boolean): Expr = v
+    override def dummy(msg: String, e: Expr): Expr = toOuter(inner.dummy(msg, toInner(e)))
 
     inline def toOption[T <: Expr](x: Expr): Option[T] =
       x match
@@ -112,7 +130,8 @@ package Optimizer:
   case class ToStringCombine(from: Lang[String], to: Lang[String]) extends
       Lang[String],
       Empty.Dup[String, Lang[String]](from, to, combineLangStrings),
-      Calc.Dup[String, Lang[String]]
+      Calc.Dup[String, Lang[String]],
+      Dummy.Dup[String, Lang[String]]
 
   def testcases =
     import CaptureLocation.f
@@ -138,6 +157,10 @@ package Optimizer:
             l.and(
               l.greaterThan(l.plus(l.int(5), l.int(10)), l.int(5)),
               l.greaterThan(l.plus(l.int(3), l.int(4)), l.plus(l.int(2), l.int(3))))),
+        // Dummy won't get optimized
+        f([T] => (l: Lang[T]) => l.plus(l.int(10), l.dummy("foobar", l.plus(l.int(123), l.int(456)))),
+          [T] => (l: Lang[T]) =>
+            l.plus(l.int(10), l.dummy("foobar", l.plus(l.int(123), l.int(456))))),
     )
 
   def opt[T](langs: (Lang[T], Lang[String])): (Lang[T], Lang[String]) =
@@ -162,7 +185,7 @@ package Optimizer:
 
   def demo(): Unit =
     println("Optimizer")
-    val l = opt(Calc.Eval(), Calc.ToString())
+    val l = opt(Eval(), ToString())
     given e : Lang[Value] = l._1
     given s : Lang[String] = l._2
     testcases.foreach(runTestLoc[Value, Lang])

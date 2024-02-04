@@ -86,7 +86,7 @@ final class ImperativeSuite extends TestSuite:
         expectEquals(test._1, test._2, test._3)(using toMunit(test._4)))
 
     // Check that the expression will be optimized
-    runWith(opt(Calc.ToString(), Calc.ToString()))
+    runWith(opt(ToString(), ToString()))
 
     // Check that running it produces the correct result
-    runWith(opt(Calc.Eval(), Calc.ToString()))
+    runWith(opt(Eval(), ToString()))
