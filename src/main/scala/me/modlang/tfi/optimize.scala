@@ -71,14 +71,14 @@ package Optimizer:
 
     override def and(lhs: Expr, rhs: Expr): Expr =
       (toConstantBool(lhs), toConstantBool(rhs)) match
-      case (Some(lhsStatic), Some(rhsStatic)) => toOuter(inner.bool(lhsStatic & rhsStatic))
+      case (Some(lhsStatic), Some(rhsStatic)) => bool(lhsStatic & rhsStatic)
       case _ => toOuter(inner.and(toInner(lhs), toInner(rhs)))
 
   transparent trait ConstantFoldCalcMixin[T, Inner <: Lang[T]] extends Lang[T], ConstantFoldIntMixin[T, Inner], ConstantFoldBoolMixin[T, Inner]:
     override def greaterThan(lhs: Expr, rhs: Expr): Expr =
-      (toConstantBool(lhs), toConstantBool(rhs)) match
+      (toConstantInt(lhs), toConstantInt(rhs)) match
       case (Some(lhsStatic), Some(rhsStatic)) => bool(lhsStatic > rhsStatic)
-      case _ => toOuter(inner.greaterThan(toInner(lhs), toInner(rhs)))
+      case (l, r) => toOuter(inner.greaterThan(toInner(lhs), toInner(rhs)))
 
   transparent trait ConstantFoldMixin[T, Inner <: Lang[T]] extends ConstantFoldCalcMixin[T, Inner]:
     case class Dynamic(val innerExpr: inner.Expr)
@@ -121,6 +121,12 @@ package Optimizer:
         f([T] => (l: Lang[T]) => l.int(15),
           [T] => (l: Lang[T]) =>
               l.plus(l.int(5), l.int(10))),
+        f([T] => (l: Lang[T]) => l.bool(true),
+          [T] => (l: Lang[T]) =>
+              l.and(l.bool(true), l.bool(true))),
+        f([T] => (l: Lang[T]) => l.bool(false),
+          [T] => (l: Lang[T]) =>
+              l.greaterThan(l.int(5), l.int(10))),
         f([T] => (l: Lang[T]) => l.int(17),
           [T] => (l: Lang[T]) =>
               l.plus(l.plus(l.int(5), l.int(10)), l.int(2))),
@@ -132,9 +138,6 @@ package Optimizer:
             l.and(
               l.greaterThan(l.plus(l.int(5), l.int(10)), l.int(5)),
               l.greaterThan(l.plus(l.int(3), l.int(4)), l.plus(l.int(2), l.int(3))))),
-        f([T] => (l: Lang[T]) => l.bool(true),
-          [T] => (l: Lang[T]) =>
-              l.and(l.bool(true), l.bool(true))),
     )
 
   def opt[T](langs: (Lang[T], Lang[String])): (Lang[T], Lang[String]) =
