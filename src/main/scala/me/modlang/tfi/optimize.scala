@@ -2,20 +2,6 @@ package me
 package modlang
 package tfi
 
-package Empty:
-  transparent trait Nested[T, Inner <: Lang[T]](inner_ : Inner) extends Lang[T]:
-    val inner = inner_
-    def toOuter(e: inner.Expr): Expr
-    def toInner(e: Expr): inner.Expr
-
-    override def eval(e: Expr): Result =
-      inner.eval(toInner(e))
-
-  trait Dup[T, L <: Lang[T]](val left : L, val right : L, mergeLangs: (T, T) => T) extends Lang[T]:
-    type Expr = (left.Expr, right.Expr)
-    override def eval(e: Expr) =
-      mergeLangs(left.eval(e._1), right.eval(e._2))
-
 package Dummy:
   trait Lang[T] extends Empty.Lang[T]:
     def dummy(msg: String, e: Expr): Expr
@@ -28,44 +14,6 @@ package Dummy:
 
   trait ToStringMixin extends Empty.Lang[String]:
     def dummy(msg: String, e: Expr) = s"<msg $msg $e>"
-
-package Calc_int:
-  transparent trait Nested[T, Inner <: Lang[T]] extends Lang[T], Empty.Nested[T, Inner]:
-    override def int(v: Int): Expr =
-      toOuter(inner.int(v))
-
-    override def plus(lhs: Expr, rhs: Expr): Expr =
-      toOuter(inner.plus(toInner(lhs), toInner(rhs)))
-
-  trait Dup[T, L <: Lang[T]] extends Lang[T], Empty.Dup[T, L]:
-    override def int(v: Int): Expr =
-      (left.int(v), right.int(v))
-
-    override def plus(lhs: Expr, rhs: Expr): Expr =
-      (left.plus(lhs._1, rhs._1), right.plus(lhs._2, rhs._2))
-
-package Calc_bool:
-  transparent trait Nested[T, Inner <: Lang[T]] extends Lang[T], Empty.Nested[T, Inner]:
-    override def and(lhs: Expr, rhs: Expr): Expr =
-      toOuter(inner.and(toInner(lhs), toInner(rhs)))
-
-    override def bool(v: Boolean): Expr =
-      toOuter(inner.bool(v))
-
-  trait Dup[T, L <: Lang[T]] extends Lang[T], Empty.Dup[T, L]:
-    override def and(lhs: Expr, rhs: Expr): Expr =
-      (left.and(lhs._1, rhs._1), right.and(lhs._2, rhs._2))
-    override def bool(v: Boolean): Expr =
-      (left.bool(v), right.bool(v))
-
-package Calc:
-  transparent trait Nested[T, Inner <: Lang[T]] extends Lang[T], Calc_int.Nested[T, Inner], Calc_bool.Nested[T, Inner]:
-    override def greaterThan(lhs: Expr, rhs: Expr): Expr =
-      toOuter(inner.greaterThan(toInner(lhs), toInner(rhs)))
-
-  trait Dup[T, L <: Lang[T]] extends Lang[T], Calc_int.Dup[T, L], Calc_bool.Dup[T, L]:
-    override def greaterThan(lhs: Expr, rhs: Expr): Expr =
-      (left.greaterThan(lhs._1, rhs._1), right.greaterThan(lhs._2, rhs._2))
 
 package Optimizer:
   trait Lang[T] extends Calc.Lang[T], Dummy.Lang[T]
