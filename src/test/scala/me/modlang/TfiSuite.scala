@@ -83,7 +83,7 @@ final class ImperativeSuite extends TestSuite:
       val e : Lang[Value] = l._1
       val s : Lang[String] = l._2
       testcases.map(runTestCaseX[Value, Lang](_, s, e)).foreach(test =>
-        expectEquals(test._1, test._2, test._3)(using toMunit(test._4)))
+        expectEquals(test._2, test._1, test._3)(using toMunit(test._4)))
 
     // Check that the expression will be optimized
     runWith(opt(ToString(), ToString()))

@@ -112,7 +112,8 @@ package Optimizer:
 
     override def int(v: Int): Expr = v
     override def bool(v: Boolean): Expr = v
-    override def dummy(msg: String, e: Expr): Expr = toOuter(inner.dummy(msg, toInner(e)))
+    override def dummy(msg: String, e: Expr): Expr =
+      toOuter(inner.dummy("opt:" + msg, toInner(e)))
 
     inline def toOption[T <: Expr](x: Expr): Option[T] =
       x match
@@ -158,9 +159,9 @@ package Optimizer:
               l.greaterThan(l.plus(l.int(5), l.int(10)), l.int(5)),
               l.greaterThan(l.plus(l.int(3), l.int(4)), l.plus(l.int(2), l.int(3))))),
         // Dummy won't get optimized
-        f([T] => (l: Lang[T]) => l.plus(l.int(10), l.dummy("foobar", l.plus(l.int(123), l.int(456)))),
+        f([T] => (l: Lang[T]) => l.plus(l.int(12), l.dummy("foobar", l.plus(l.int(123), l.int(456)))),
           [T] => (l: Lang[T]) =>
-            l.plus(l.int(10), l.dummy("foobar", l.plus(l.int(123), l.int(456))))),
+            l.plus(l.plus(l.int(2), l.int(10)), l.dummy("foobar", l.plus(l.int(123), l.int(456))))),
     )
 
   def opt[T](langs: (Lang[T], Lang[String])): (Lang[T], Lang[String]) =
