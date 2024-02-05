@@ -2,14 +2,8 @@ package me
 package modlang
 package tfi
 
-package Optimizer:
-  trait Lang[T] extends Calc.Lang[T], Dummy.Lang[T]
-  type Value = Calc.Value | String
-
-  class ToString extends Lang[String], Calc.ToStringMixin, Dummy.ToStringMixin
-  class Eval extends Lang[Value], Calc.EvalMixin[Value], Dummy.EvalMixin[Value], EvalId[Value], EvalIntBool[Value]
-
-  transparent trait ConstantFoldIntMixin[T, Inner <: Lang[T]] extends Calc_int.Nested[T, Inner]:
+package Calc_int:
+  transparent trait ConstantFoldMixin[T, Inner <: Lang[T]] extends Nested[T, Inner]:
     def toConstantInt(e: Expr): Option[Int]
 
     override def plus(lhs: Expr, rhs: Expr): Expr =
@@ -17,7 +11,8 @@ package Optimizer:
       case (Some(lhsStatic), Some(rhsStatic)) => int(lhsStatic + rhsStatic)
       case _ => toOuter(inner.plus(toInner(lhs), toInner(rhs)))
 
-  transparent trait ConstantFoldBoolMixin[T, Inner <: Lang[T]] extends Calc_bool.Nested[T, Inner]:
+package Calc_bool:
+  transparent trait ConstantFoldMixin[T, Inner <: Lang[T]] extends Nested[T, Inner]:
     def toConstantBool(e: Expr): Option[Boolean]
 
     override def and(lhs: Expr, rhs: Expr): Expr =
@@ -25,13 +20,21 @@ package Optimizer:
       case (Some(lhsStatic), Some(rhsStatic)) => bool(lhsStatic & rhsStatic)
       case _ => toOuter(inner.and(toInner(lhs), toInner(rhs)))
 
-  transparent trait ConstantFoldCalcMixin[T, Inner <: Lang[T]] extends Lang[T], ConstantFoldIntMixin[T, Inner], ConstantFoldBoolMixin[T, Inner]:
+package Calc:
+  transparent trait ConstantFoldMixin[T, Inner <: Lang[T]] extends Lang[T], Calc_int.ConstantFoldMixin[T, Inner], Calc_bool.ConstantFoldMixin[T, Inner], Nested[T, Inner]:
     override def greaterThan(lhs: Expr, rhs: Expr): Expr =
       (toConstantInt(lhs), toConstantInt(rhs)) match
       case (Some(lhsStatic), Some(rhsStatic)) => bool(lhsStatic > rhsStatic)
       case (l, r) => toOuter(inner.greaterThan(toInner(lhs), toInner(rhs)))
 
-  transparent trait ConstantFoldMixin[T, Inner <: Lang[T]] extends ConstantFoldCalcMixin[T, Inner]:
+package Optimizer:
+  trait Lang[T] extends Calc.Lang[T], Dummy.Lang[T]
+  type Value = Calc.Value | String
+
+  class ToString extends Lang[String], Calc.ToStringMixin, Dummy.ToStringMixin
+  class Eval extends Lang[Value], Calc.EvalMixin[Value], Dummy.EvalMixin[Value], EvalId[Value], EvalIntBool[Value]
+
+  transparent trait ConstantFoldMixin[T, Inner <: Lang[T]] extends Lang[T], Calc.ConstantFoldMixin[T, Inner]:
     case class Dynamic(val innerExpr: inner.Expr)
     type Expr = Dynamic | Int | Boolean
 
