@@ -27,14 +27,30 @@ package Calc:
       case (Some(lhsStatic), Some(rhsStatic)) => bool(lhsStatic > rhsStatic)
       case (l, r) => toOuter(inner.greaterThan(toInner(lhs), toInner(rhs)))
 
+package Algo:
+  transparent trait ConstantFoldMixin[T, Inner <: Lang[T]] extends Lang[T], Nested[T, Inner]:
+    def toConstantBool(e: Expr): Option[Boolean]
+
+    override def if_(cond: Expr, onTrue: Expr, onFalse: Expr): Expr =
+      toConstantBool(cond) match
+        case Some(true) => onTrue
+        case Some(false) => onFalse
+        case None => toOuter(inner.if_(toInner(cond), toInner(onTrue), toInner(onFalse)))
+
+package Algo_calc:
+  transparent trait ConstantFoldMixin[T, Inner <: Lang[T]] extends Lang[T], Algo.ConstantFoldMixin[T, Inner], Calc.ConstantFoldMixin[T, Inner]
+
 package Optimizer:
-  trait Lang[T] extends Calc.Lang[T], Dummy.Lang[T]
-  type Value = Calc.Value | String
+  trait Lang[T] extends Algo_calc.Lang[T], Dummy.Lang[T]
+  type Value = Algo_calc.Value
 
-  class ToString extends Lang[String], Calc.ToStringMixin, Dummy.ToStringMixin
-  class Eval extends Lang[Value], Calc.EvalMixin[Value], Dummy.EvalMixin[Value], EvalId[Value], EvalIntBool[Value]
+  class ToString extends Lang[String], Algo_calc.ToStringMixin, Dummy.ToStringMixin
+  trait EvalMixin extends Lang[Value], Algo_calc.EvalMixin[Value], Dummy.EvalMixin[Value], EvalFn[Value], EvalFnIntBool[Value]
+  class Eval extends EvalMixin
 
-  transparent trait ConstantFoldMixin[T, Inner <: Lang[T]] extends Lang[T], Calc.ConstantFoldMixin[T, Inner]:
+  transparent trait ConstantFoldMixin[T, Inner <: Lang[T]] extends
+      Lang[T],
+      Algo_calc.ConstantFoldMixin[T, Inner]:
     case class Dynamic(val innerExpr: inner.Expr)
     type Expr = Dynamic | Int | Boolean
 
@@ -62,13 +78,14 @@ package Optimizer:
 
   case class ConstantFold[T, Inner <: Lang[T]](inner_ : Inner) extends
     Empty.Nested[T, Inner](inner_),
-    ConstantFoldMixin[T, Inner]
+    ConstantFoldMixin[T, Inner]:
+    type Loop = inner.Loop
 
   def combineLangStrings(lhs: String, rhs: String): String = s"${lhs} => ${rhs}"
-  case class ToStringCombine(from: Lang[String], to: Lang[String]) extends
+  case class ToStringCombine[L <: Lang[String]](from: L, to: L) extends
       Lang[String],
       Empty.Dup[String, Lang[String]](from, to, combineLangStrings),
-      Calc.Dup[String, Lang[String]],
+      Algo_calc.Dup[String, Lang[String]],
       Dummy.Dup[String, Lang[String]]
 
   def testcases =
@@ -99,6 +116,9 @@ package Optimizer:
         f([T] => (l: Lang[T]) => l.plus(l.int(12), l.dummy("foobar", l.plus(l.int(123), l.int(456)))),
           [T] => (l: Lang[T]) =>
             l.plus(l.plus(l.int(2), l.int(10)), l.dummy("foobar", l.plus(l.int(123), l.int(456))))),
+        f([T] => (l: Lang[T]) => l.int(10),
+          [T] => (l: Lang[T]) =>
+            l.if_(l.bool(true), l.int(10), l.dummy("", l.int(100)))),
     )
 
   def opt[T](langs: (Lang[T], Lang[String])): (Lang[T], Lang[String]) =
