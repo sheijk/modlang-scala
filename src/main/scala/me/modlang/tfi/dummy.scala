@@ -15,5 +15,5 @@ package Dummy:
   trait ToStringMixin extends Empty.Lang[String]:
     def dummy(msg: String, e: Expr) = s"<msg $msg $e>"
 
-  trait EvalMixin[T >: Int | Boolean] extends Lang[T], Calc.EvalMixin[T], EvalId[T], EvalIntBool[T]:
+  trait EvalMixin[T] extends Lang[T], Calc.EvalMixin[T]:
     def dummy(msg: String, e: Expr) = e
