@@ -5,6 +5,16 @@ package tfi
 package Algo_calc:
   trait Lang[T] extends Algo.Lang[T], Calc.Lang[T]
 
+  transparent trait Nested[T, Inner <: Lang[T]] extends
+    Lang[T],
+    Algo.Nested[T, Inner],
+    Calc.Nested[T, Inner]
+
+  trait Dup[T, L <: Lang[T]] extends
+    Lang[T],
+    Algo.Dup[T, L],
+    Calc.Dup[T, L]
+
   trait ToStringMixin extends Lang[String], Algo.ToStringMixin, Calc.ToStringMixin
   class ToString extends ToStringMixin
   given ToString()

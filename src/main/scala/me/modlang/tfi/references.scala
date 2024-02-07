@@ -10,6 +10,20 @@ package References:
   trait Lang[T] extends Empty.Lang[T]:
     def mut(name: String, value: Expr, in: Ref[Expr] => Expr): Expr
 
+  transparent trait Nested[T, Inner <: Lang[T]] extends Lang[T], Empty.Nested[T, Inner]:
+    def toOuterRef(r: Ref[inner.Expr]): Ref[Expr]
+
+    def mut(name: String, value: Expr, in: Ref[Expr] => Expr): Expr =
+      toOuter(inner.mut(name, toInner(value), v => toInner(in(toOuterRef(v)))))
+
+  trait Dup[T, L <: Lang[T]] extends Lang[T], Empty.Dup[T, L]:
+    def fromLeftRef(r: Ref[left.Expr]): Ref[Expr]
+    def fromRightRef(r: Ref[right.Expr]): Ref[Expr]
+
+    def mut(name: String, value: Expr, in: Ref[Expr] => Expr): Expr =
+      (left.mut(name, value._1, v => in(fromLeftRef(v))._1),
+      right.mut(name, value._2, v => in(fromRightRef(v))._2))
+
   class StringRef(name: String) extends Ref[String]:
     def set(v: String): String = s"($name = $v)"
     def get(): String = name
