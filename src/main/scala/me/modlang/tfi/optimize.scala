@@ -2,6 +2,8 @@ package me
 package modlang
 package tfi
 
+import scala.collection.mutable.ListBuffer
+
 package Calc_int:
   transparent trait ConstantFoldMixin[T, Inner <: Lang[T]] extends Nested[T, Inner]:
     def toConstantInt(e: Expr): Option[Int]
@@ -40,17 +42,50 @@ package Algo:
 package Algo_calc:
   transparent trait ConstantFoldMixin[T, Inner <: Lang[T]] extends Lang[T], Algo.ConstantFoldMixin[T, Inner], Calc.ConstantFoldMixin[T, Inner]
 
-package Optimizer:
-  trait Lang[T] extends Algo_calc.Lang[T], Dummy.Lang[T]
-  type Value = Algo_calc.Value
+package Bindings:
+  transparent trait ConstantFoldMixin[T, Inner <: Lang[T]] extends Lang[T], Nested[T, Inner]
 
-  class ToString extends Lang[String], Algo_calc.ToStringMixin, Dummy.ToStringMixin
-  trait EvalMixin extends Lang[Value], Algo_calc.EvalMixin[Value], Dummy.EvalMixin[Value], EvalFn[Value], EvalFnIntBool[Value]
+package Algo_calc_bindings:
+  transparent trait ConstantFoldMixin[T, Inner <: Lang[T]] extends Lang[T],
+    Algo_calc.ConstantFoldMixin[T, Inner],
+    Bindings.ConstantFoldMixin[T, Inner]
+
+package References:
+  transparent trait ConstantFoldMixin[T, Inner <: Lang[T]] extends Lang[T], Nested[T, Inner]
+
+package Blocks:
+  transparent trait ConstantFoldMixin[T, Inner <: Lang[T]] extends Lang[T], Nested[T, Inner]:
+    def isConstant(e: Expr): Boolean
+
+    override def block(statements: Expr*): Expr =
+      val newStatements = ListBuffer[inner.Expr]()
+      statements.foreach(stm =>
+        if !isConstant(stm) then
+          newStatements.addOne(toInner(stm)))
+      if newStatements.isEmpty && !statements.isEmpty then
+        newStatements.addOne(toInner(statements.last))
+      if newStatements.size == 1 then
+        toOuter(newStatements.last)
+      else
+        toOuter(inner.block(newStatements.toList*))
+
+package Imperative:
+  transparent trait ConstantFoldMixin[T, Inner <: Lang[T]] extends Lang[T],
+    References.ConstantFoldMixin[T, Inner],
+    Blocks.ConstantFoldMixin[T, Inner],
+    Algo_calc_bindings.ConstantFoldMixin[T, Inner]
+
+package Optimizer:
+  trait Lang[T] extends Imperative.Lang[T], Dummy.Lang[T]
+  type Value = Imperative.Value
+
+  class ToString extends Lang[String], Imperative.ToStringMixin, Dummy.ToStringMixin
+  trait EvalMixin extends Lang[Value], Imperative.EvalMixin[Value], Dummy.EvalMixin[Value], EvalFn[Value], EvalFnIntBool[Value]
   class Eval extends EvalMixin
 
   transparent trait ConstantFoldMixin[T, Inner <: Lang[T]] extends
       Lang[T],
-      Algo_calc.ConstantFoldMixin[T, Inner]:
+      Imperative.ConstantFoldMixin[T, Inner]:
     case class Dynamic(val innerExpr: inner.Expr)
     type Expr = Dynamic | Int | Boolean
 
@@ -75,6 +110,10 @@ package Optimizer:
 
     def toConstantInt(e: Expr): Option[Int] = toOption[Int](e)
     def toConstantBool(e: Expr): Option[Boolean] = toOption[Boolean](e)
+    def isConstant(e: Expr): Boolean =
+     e match
+       case _ : Dynamic => false
+       case _ => true
 
   case class ConstantFold[T, Inner <: Lang[T]](inner_ : Inner) extends
     Empty.Nested[T, Inner](inner_),
@@ -85,7 +124,7 @@ package Optimizer:
   case class ToStringCombine[L <: Lang[String]](from: L, to: L) extends
       Lang[String],
       Empty.Dup[String, Lang[String]](from, to, combineLangStrings),
-      Algo_calc.Dup[String, Lang[String]],
+      Imperative.Dup[String, Lang[String]],
       Dummy.Dup[String, Lang[String]]
 
   def testcases =
@@ -119,6 +158,17 @@ package Optimizer:
         f([T] => (l: Lang[T]) => l.int(10),
           [T] => (l: Lang[T]) =>
             l.if_(l.bool(true), l.int(10), l.dummy("", l.int(100)))),
+        f([T] => (l: Lang[T]) => l.block(l.int(3)),
+          [T] => (l: Lang[T]) =>
+            l.block(l.int(1), l.int(2), l.int(3))),
+        f([T] => (l: Lang[T]) => l.mut("foo", l.int(100), foo => l.int(123)),
+          [T] => (l: Lang[T]) => l.mut("foo", l.int(100), foo => l.int(123))),
+        f([T] => (l: Lang[T]) =>
+          l.mut("foo", l.int(100), foo =>
+            l.block(foo.get())),
+          [T] => (l: Lang[T]) =>
+            l.mut("foo", l.int(100), foo =>
+              l.block(l.int(1), l.int(2), foo.get()))),
     )
 
   def opt[T](langs: (Lang[T], Lang[String])): (Lang[T], Lang[String]) =
