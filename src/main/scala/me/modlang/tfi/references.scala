@@ -25,12 +25,13 @@ package References:
 
     def mut(name: String, value: Expr, in: Ref[Expr] => Expr): Expr =
       var result : Expr | Null = null
-      left.mut(name, value._1, leftRef =>
-        right.mut(name, value._2, rightRef =>
+      var rightResult : right.Expr | Null = null
+      val leftResult = left.mut(name, value._1, leftRef =>
+        rightResult = right.mut(name, value._2, rightRef =>
           result = in(PairRef(leftRef, rightRef))
           result.asInstanceOf[Expr]._2)
         result.asInstanceOf[Expr]._1)
-      result.asInstanceOf[Expr]
+      (leftResult, rightResult).asInstanceOf[Expr]
 
   class StringRef(name: String) extends Ref[String]:
     def set(v: String): String = s"($name = $v)"
