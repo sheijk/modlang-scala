@@ -39,10 +39,10 @@ def bar[L : Calc_bool.Lang]() : L =
 
 def demo() =
   println("Running tfi demo")
-  println(foo("xxxx"))
-  println(foo(true))
-  println(foo(false))
-  println(bar[String]())
-  println(bar[Boolean]())
+  println("  " + foo("xxxx"))
+  println("  " + foo(true))
+  println("  " + foo(false))
+  println("  " + bar[String]())
+  println("  " + bar[Boolean]())
   // Calc_bool.tests[Boolean].foreach Calc_bool.runTest
   // ((expected, expr) => if expected != expr then throw Error("blah"))

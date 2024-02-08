@@ -18,7 +18,7 @@ trait Runner[Expr]:
   def run(e: Expr): Value
   def runAndPrint(e: Expr) =
     val value = run(e)
-    println(s"Got $value by running $e")
+    println(s"  Got $value by running $e")
 
 class AdtAst extends Ast[adt_interpreter.Expr], Runner[adt_interpreter.Expr]:
   import adt_interpreter.*

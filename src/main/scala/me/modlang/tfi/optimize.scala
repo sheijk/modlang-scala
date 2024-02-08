@@ -186,7 +186,7 @@ package Optimizer:
     val expectedValue = e.eval(expected(e))
     val source = s.eval(program(s))
     val result = e.eval(program(e))
-    println(s"Running $source produced $result")
+    println(s"  Running $source produced $result")
     if result != expectedValue then
       val expectedStr = s.eval(expected(s))
       println(s"$location: error: expected $expectedStr but found $result")

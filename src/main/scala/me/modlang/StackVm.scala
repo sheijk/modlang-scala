@@ -32,7 +32,7 @@ def repl() =
 
 def runSource(source : String) =
   val stack = evalSource(source)
-  print("Got ")
+  print("  Got ")
   stack.foreach(x => print(s" $x"))
   println(s" by running $source")
 

@@ -13,7 +13,7 @@ def runProgram[Value, Lang[_] <: Empty.Lang[?]](
 ): Unit =
   val source = f(s)
   val result = e.eval(f(e))
-  println(s"Running $source produced $result")
+  println(s"  Running $source produced $result")
 
 def runTestLoc[Value, Lang[_] <: Empty.Lang[?]](
   t: (Value, [T] => (l: Lang[T]) => l.Expr, Location)
@@ -26,7 +26,7 @@ def runTestLoc[Value, Lang[_] <: Empty.Lang[?]](
   val location = t._3
   val source = s.eval(program(s))
   val result = e.eval(program(e))
-  println(s"Running $source produced $result")
+  println(s"  Running $source produced $result")
   if result != expected then
     println(s"$location: error: expected $expected but found $result")
 
@@ -40,4 +40,21 @@ def demo() =
   given Calc.Eval()
   runProgram[Calc.Value, Calc.Lang](simple.asInstanceOf[Calc.Program])
   runProgram[Calc.Value, Calc.Lang](calc)
+  imperativeDemo()
   Optimizer.demo()
+
+def imperativeDemo() =
+  val program = [T] => (l: Imperative.Lang[T]) =>
+      import l.*
+      mut("idx", int(0), idx =>
+      mut("sum", int(0), sum =>
+      loop("l", l =>
+        if_(greaterThan(idx.get(), int(10)),
+          break(l, sum.get()),
+          block(
+            idx.set(plus(idx.get(), int(1))),
+            sum.set(plus(sum.get(), idx.get()))
+            )))))
+  given Imperative.ToString()
+  given Imperative.Eval()
+  runProgram[Imperative.Value, Imperative.Lang](program)

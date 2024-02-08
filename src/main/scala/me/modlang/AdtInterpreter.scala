@@ -41,5 +41,5 @@ def interprete(e : Expr) : Value =
 
 def run(e : Expr) =
   val value = interprete(e)
-  println(s"Got $value by running $e")
+  println(s"  Got $value by running $e")
 
