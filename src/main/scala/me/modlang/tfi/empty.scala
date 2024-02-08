@@ -9,7 +9,7 @@ package Empty:
   trait Lang[T]:
     type Expr
     type Result = T
-    def eval(e: Expr): Result
+    def eval(e: Expr): T
 
   transparent trait Nested[T, Inner <: Lang[T]](inner_ : Inner) extends Lang[T]:
     val inner = inner_

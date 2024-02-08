@@ -101,7 +101,7 @@ package Optimizer:
     override def int(v: Int): Expr = v
     override def bool(v: Boolean): Expr = v
     override def dummy(msg: String, e: Expr): Expr =
-      toOuter(inner.dummy("opt:" + msg, toInner(e)))
+      toOuter(inner.dummy(msg, toInner(e)))
 
     inline def toOption[T <: Expr](x: Expr): Option[T] =
       x match
@@ -152,41 +152,42 @@ package Optimizer:
               l.greaterThan(l.plus(l.int(5), l.int(10)), l.int(5)),
               l.greaterThan(l.plus(l.int(3), l.int(4)), l.plus(l.int(2), l.int(3))))),
         // Dummy won't get optimized
-        f([T] => (l: Lang[T]) => l.plus(l.int(12), l.dummy("foobar", l.plus(l.int(123), l.int(456)))),
+        f([T] => (l: Lang[T]) => l.plus(l.int(12), l.dummy("foobar", l.int(579))),
           [T] => (l: Lang[T]) =>
             l.plus(l.plus(l.int(2), l.int(10)), l.dummy("foobar", l.plus(l.int(123), l.int(456))))),
         f([T] => (l: Lang[T]) => l.int(10),
           [T] => (l: Lang[T]) =>
             l.if_(l.bool(true), l.int(10), l.dummy("", l.int(100)))),
-        f([T] => (l: Lang[T]) => l.block(l.int(3)),
+        f([T] => (l: Lang[T]) => l.int(3),
           [T] => (l: Lang[T]) =>
             l.block(l.int(1), l.int(2), l.int(3))),
         f([T] => (l: Lang[T]) => l.mut("foo", l.int(100), foo => l.int(123)),
           [T] => (l: Lang[T]) => l.mut("foo", l.int(100), foo => l.int(123))),
         f([T] => (l: Lang[T]) =>
-          l.mut("foo", l.int(100), foo =>
-            l.block(foo.get())),
+          l.mut("foo", l.int(100), foo => foo.get()),
           [T] => (l: Lang[T]) =>
             l.mut("foo", l.int(100), foo =>
               l.block(l.int(1), l.int(2), foo.get()))),
     )
 
   def opt[T](langs: (Lang[T], Lang[String])): (Lang[T], Lang[String]) =
-    (ConstantFold(langs._1), ToStringCombine(langs._2, ConstantFold(langs._2)))
+    (ConstantFold(langs._1), ConstantFold(langs._2))
 
   def runTestLoc[Value, Lang[_] <: Empty.Lang[?]](
-    t: ([T] => (l: Lang[T]) => l.Expr, [T] => (l: Lang[T]) => l.Expr, Location)
-  )(using
-    s: Lang[String],
+    t: ([T] => (l: Lang[T]) => l.Expr, [T] => (l: Lang[T]) => l.Expr, Location),
+    eNoOpt: Lang[Value],
+    sNoOpt: Lang[String],
     e: Lang[Value],
+    s: Lang[String],
   ): Unit =
     val expected = t._1
     val program = t._2
     val location = t._3
     val expectedValue = e.eval(expected(e))
-    val source = s.eval(program(s))
+    val source = sNoOpt.eval(program(sNoOpt))
+    val sourceOpt = s.eval(program(s))
     val result = e.eval(program(e))
-    println(s"  Running $source produced $result")
+    println(s"  Running $source optimized to $sourceOpt produced $result")
     if result != expectedValue then
       val expectedStr = s.eval(expected(s))
       println(s"$location: error: expected $expectedStr but found $result")
@@ -194,7 +195,7 @@ package Optimizer:
   def demo(): Unit =
     println("Optimizer")
     val l = opt(Eval(), ToString())
-    given e : Lang[Value] = l._1
-    given s : Lang[String] = l._2
-    testcases.foreach(runTestLoc[Value, Lang])
+    val e : Lang[Value] = l._1
+    val s : Lang[String] = l._2
+    testcases.foreach(runTestLoc[Value, Lang](_, Eval(), ToString(), e, s))
 

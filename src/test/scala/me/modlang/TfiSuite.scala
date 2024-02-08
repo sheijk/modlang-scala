@@ -17,17 +17,22 @@ final class ImperativeSuite extends TestSuite:
     val result = e.eval(program(e))
     (expected, result, source, t._3)
 
-  def runTestCaseX[Value, Lang[_] <: Empty.Lang[?]](
+  def runTestCaseOpt[Value, Lang[_] <: Empty.Lang[?]](
     t: ([T] => (l: Lang[T]) => l.Expr, [T] => (l: Lang[T]) => l.Expr, Location),
-    s: Lang[String],
-    e: Lang[Value]
-  ): (e.Result, e.Result, s.Result, Location) =
+    evalUnoptimized: Lang[Value],
+    toStringUnoptimized: Lang[String],
+    eval: Lang[Value],
+    toStr: Lang[String],
+  ): Unit =
     val expected = t._1
     val program = t._2
-    val expectedValue = e.eval(expected(e))
-    val source = s.eval(program(s))
-    val result = e.eval(program(e))
-    (expectedValue, result, source, t._3)
+    val loc = t._3
+    val expectedValue = eval.eval(expected(eval))
+    val expectedSource = toStr.eval(expected(toStr))
+    val optimizedSource = toStringUnoptimized.eval(expected(toStringUnoptimized))
+    val result = eval.eval(program(eval))
+    expectEquals(expectedValue, result, "eval optimized code")(using toMunit(loc))
+    expectEquals(expectedSource, optimizedSource, "optimized source")(using toMunit(loc))
 
   def toMunit(loc: Location) =
     munit.Location(loc.file, loc.line)
@@ -79,14 +84,5 @@ final class ImperativeSuite extends TestSuite:
 
   test("Optimizer"):
     import Optimizer.*
-    def runWith[Value](l: (Lang[Value], Lang[String])) =
-      val e : Lang[Value] = l._1
-      val s : Lang[String] = l._2
-      testcases.map(runTestCaseX[Value, Lang](_, s, e)).foreach(test =>
-        expectEquals(test._2, test._1, test._3)(using toMunit(test._4)))
-
-    // Check that the expression will be optimized
-    runWith(opt(ToString(), ToString()))
-
-    // Check that running it produces the correct result
-    runWith(opt(Eval(), ToString()))
+    val (eOpt, sOpt) = opt(Eval(), ToString())
+    testcases.foreach(runTestCaseOpt[Value, Lang](_, Eval(), ToString(), eOpt, sOpt))
