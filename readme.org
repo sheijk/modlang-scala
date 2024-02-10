@@ -29,3 +29,52 @@ Mostly to see if tests and types get any simpler
 ** [[https://github.com/search?type=code&q=mkSbtDerivation][scala usage in nix on github]]
 
 ** [[https://duckduckgo.com/?t=ffab&q=emacs+metals+scala+eglot&ia=web][emacs metals scala eglot at DuckDuckGo]]
+
+* Scala resources
+- [[https://docs.scala-lang.org/getting-started/index.html][Getting Started]]
+- [[https://docs.scala-lang.org/scala3/book/introduction.html][Scala 3 — Book]]
+- [[https://docs.scala-lang.org/scala3/reference/][Scala 3 Reference]]
+- [[https://docs.scala-lang.org/tour/tour-of-scala.html][Tour of Scala]]
+
+- [[https://scalac.io/blog/typeclasses-in-scala/][Type classes in Scala]]
+- [[https://docs.scala-lang.org/scala3/reference/metaprogramming/reflection.html][Reflection]]
+
+- [[https://www.scala-sbt.org/1.x/docs/][sbt Reference Manual]]
+- [[https://docs.scala-lang.org/scala3/book/tools-sbt.html][Building and Testing Scala Projects with sbt]]
+- [[https://www.scala-sbt.org/1.x/docs/Command-Line-Reference.html][sbt Reference Manual — Command Line Reference]]
+
+- [[https://okmij.org/ftp/tagless-final/course/lecture.pdf][Typed Tagless Final Interpreters]]
+- [[https://scalac.io/blog/tagless-final-pattern-for-scala-code/][Exploring Tagless Final pattern for extensive and readable Scala code]]
+- [[http://lambda-the-ultimate.org/node/2232][The Expression Problem Revisited (Java approaches)]]
+- [[https://www.scala-lang.org/docu/files/TheExpressionProblem.pdf][The expression problem (scala lang)]]
+
+- [[https://okmij.org/ftp/Computation/variables-effects.html][Free Variables and Free Effects]]
+  
+* Todos
+** TODO drop Null
+:PROPERTIES:
+:CREATED:  <2024-01-28 Sun 15:24>
+:END:
+#+begin_src scala
+extension [T](x: T | Null)
+   inline def nn: T =
+     assert(x != null)
+     x.asInstanceOf[T]
+#+end_src
+From [[https://docs.scala-lang.org/scala3/reference/experimental/explicit-nulls.html#][Explicit Nulls]]
+
+** DONE test framework finden
+CLOSED: [2024-01-28 Sun 15:24]
+** DONE trait zum ast produzieren definieren, damit generische tests schreiben
+CLOSED: [2024-01-28 Sun 17:03]
+** mit ocaml modular-lang-prot vergleichen
+** andere ansaetze fuer expression problem sammeln
+** TODO https://melpa.org/#/scala-ts-mode
+:PROPERTIES:
+:CREATED:  <2024-02-04 Sun 13:29>
+* TODO [[https://jastadd.cs.lth.se/web/extendj/][JastAdd.org]]
+* [[https://www.cs.cornell.edu/projects/polyglot/][Polyglot extensible compiler framework]]
+* [[https://www.cs.cornell.edu/Projects/jx/][J&: Nested Inheritance for Java]]
+:PROPERTIES:
+:CREATED:  <2024-02-11 Sun 00:08>
+:END:
