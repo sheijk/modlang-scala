@@ -86,20 +86,30 @@ package Optimizer:
   transparent trait ConstantFoldMixin[T, Inner <: Lang[T]] extends
       Lang[T],
       Imperative.ConstantFoldMixin[T, Inner]:
-    case class Dynamic(val innerExpr: inner.Expr)
-    type Expr = Dynamic | Int | Boolean
+    trait Expr:
+      def toInner(): inner.Expr
+      def toConstantInt(): Option[Int] = None
+      def toConstantBool(): Option[Boolean] = None
+      def isConstant(): Boolean = false
 
-    def toOuter(e: inner.Expr): Expr =
-      Dynamic(e)
+    case class Dynamic(innerExpr: inner.Expr) extends Expr:
+      def toInner(): inner.Expr = innerExpr
 
-    def toInner(e: Expr): inner.Expr =
-      e match
-         case e: Dynamic => e.innerExpr
-         case i: Int => inner.int(i)
-         case b: Boolean => inner.bool(b)
+    case class ConstantInt(value: Int) extends Expr:
+      def toInner(): inner.Expr = inner.int(value)
+      override def toConstantInt(): Option[Int] = Some(value)
+      override def isConstant(): Boolean = true
 
-    override def int(v: Int): Expr = v
-    override def bool(v: Boolean): Expr = v
+    case class ConstantBool(value: Boolean) extends Expr:
+      def toInner(): inner.Expr = inner.bool(value)
+      override def toConstantBool(): Option[Boolean] = Some(value)
+      override def isConstant(): Boolean = true
+
+    def toOuter(e: inner.Expr): Expr = Dynamic(e)
+    def toInner(e: Expr): inner.Expr = e.toInner()
+
+    override def int(v: Int): Expr = ConstantInt(v)
+    override def bool(v: Boolean): Expr = ConstantBool(v)
     override def dummy(msg: String, e: Expr): Expr =
       toOuter(inner.dummy(msg, toInner(e)))
 
@@ -108,12 +118,9 @@ package Optimizer:
       case t: T => Some(t)
       case _ => None
 
-    def toConstantInt(e: Expr): Option[Int] = toOption[Int](e)
-    def toConstantBool(e: Expr): Option[Boolean] = toOption[Boolean](e)
-    def isConstant(e: Expr): Boolean =
-     e match
-       case _ : Dynamic => false
-       case _ => true
+    def toConstantInt(e: Expr): Option[Int] = e.toConstantInt()
+    def toConstantBool(e: Expr): Option[Boolean] = e.toConstantBool()
+    def isConstant(e: Expr): Boolean = e.isConstant()
 
   case class ConstantFold[T, Inner <: Lang[T]](inner_ : Inner) extends
     Empty.Nested[T, Inner](inner_),
