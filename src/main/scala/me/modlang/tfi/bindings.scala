@@ -17,7 +17,7 @@ package Bindings:
 
   trait ToStringMixin extends Lang[String], EvalId[String]:
     def let(name: String, value: Expr, in: Expr => Expr): Expr =
-      s"let $name = $value in ${in(name)}"
+      s"let $name = $value :in ${in(name)}"
 
   class ToString extends ToStringMixin, EvalId[String]
   given ToString()

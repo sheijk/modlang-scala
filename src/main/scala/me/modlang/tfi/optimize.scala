@@ -69,11 +69,19 @@ package Blocks:
       else
         toOuter(inner.block(newStatements.toList*))
 
+package Lambda:
+  transparent trait ConstantFoldMixin[T, Inner <: Lang[T]] extends Lang[T], Nested[T, Inner]:
+    def fn(name: String, body: Expr => Expr, in: (Expr => Expr) => Expr): Expr =
+      val innerBody = (arg: inner.Expr) => toInner(body(toOuter(arg)))
+      val innerIn = (arg: inner.Expr => inner.Expr) => throw Error("foo")
+      toOuter(inner.fn(name, innerBody, innerIn))
+
 package Imperative:
   transparent trait ConstantFoldMixin[T, Inner <: Lang[T]] extends Lang[T],
     References.ConstantFoldMixin[T, Inner],
     Blocks.ConstantFoldMixin[T, Inner],
-    Algo_calc_bindings.ConstantFoldMixin[T, Inner]
+    Algo_calc_bindings.ConstantFoldMixin[T, Inner],
+    Lambda.ConstantFoldMixin[T, Inner]
 
 package Optimizer:
   trait Lang[T] extends Imperative.Lang[T], Dummy.Lang[T]

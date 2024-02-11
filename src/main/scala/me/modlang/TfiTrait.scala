@@ -44,6 +44,7 @@ def demo() =
   Optimizer.demo()
 
 def imperativeDemo() =
+  println("Imperative")
   val program = [T] => (l: Imperative.Lang[T]) =>
       import l.*
       mut("idx", int(0), idx =>
@@ -58,3 +59,4 @@ def imperativeDemo() =
   given Imperative.ToString()
   given Imperative.Eval()
   runProgram[Imperative.Value, Imperative.Lang](program)
+  Imperative.testcases.foreach(runTestLoc[Imperative.Value, Imperative.Lang](_))
