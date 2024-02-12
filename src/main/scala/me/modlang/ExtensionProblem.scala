@@ -28,7 +28,7 @@ package class_model:
 
   def test() =
     val e = AddE(LitE(10), NegE(LitE(5)))
-    println(s"  eval(${e.show()}) => ${e.eval()}")
+    println(s"  eval(${e.show()}) => ${e.eval()} [class]")
 
 package function_model:
   enum Expr:
@@ -62,7 +62,43 @@ package function_model:
         case ExprN.Base(e) => function_model.eval(e)
         case ExprN.Neg(e) => -eval(e)
 
+package visitor_model {} // from paper
+
+// Read source [9] from "The extension problem revisited" by Mads Torgensen and
+// add functional approaches here. Solutions for immutable objects only are
+// allowed.
+
+package tfi_model:
+  trait Lang:
+    type Expr
+    def lit(value: Int): Expr
+    def add(lhs: Expr, rhs: Expr): Expr
+
+  class Show extends Lang:
+    type Expr = String
+    def lit(value: Int): Expr = value.toString()
+    def add(lhs: Expr, rhs: Expr): Expr = s"$lhs + $rhs"
+
+  trait LangN extends Lang:
+    def neg(e: Expr): Expr
+
+  class ShowN extends Show, LangN:
+    def neg(e: Expr): Expr = s"-$e"
+
+  class Eval extends Lang:
+    type Expr = Int
+    def lit(value: Int): Expr = value
+    def add(lhs: Expr, rhs: Expr): Expr = lhs + rhs
+
+  class EvalN extends Eval, LangN:
+    def neg(e: Expr): Expr = -e
+
+  def test() =
+    def e(l: LangN): l.Expr = l.add(l.lit(10), l.neg(l.lit(5)))
+    println(s"  eval(${e(ShowN())}) => ${e(EvalN())} [tfi]")
+
 def demo() =
   println("Extension problem")
   class_model.test()
+  tfi_model.test()
 
