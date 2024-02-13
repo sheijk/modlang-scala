@@ -13,6 +13,7 @@ package expression_problem
 def demo() =
   println("Extension problem")
   class_model.test()
+  union_model.test()
   visitor_model.test()
   traits_model.test()
   tfi_model.test()
