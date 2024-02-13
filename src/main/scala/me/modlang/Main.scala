@@ -32,6 +32,6 @@ def andreMode() =
   andreMode()
   typeclass.demo()
   tfi.demo()
-  extension_problem.demo()
+  expression_problem.demo()
 
   println("─" * 100)
