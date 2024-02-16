@@ -17,4 +17,5 @@ def demo() =
   visitor_model.test()
   traits_model.test()
   tfi_model.test()
+  tc_model.test()
 
