@@ -78,3 +78,11 @@ CLOSED: [2024-01-28 Sun 17:03]
 :PROPERTIES:
 :CREATED:  <2024-02-11 Sun 00:08>
 :END:
+* TODO Kompost-ML
+:PROPERTIES:
+:CREATED:  <2024-02-12 Mon 01:03>
+:END:
+* TODO [[https://docs.scala-lang.org/scala3/book/types-structural.html][Structural Types | Scala 3 — Book | Scala Documentation]]
+:PROPERTIES:
+:CREATED:  <2024-02-12 Mon 16:09>
+:END:
