@@ -18,4 +18,5 @@ def demo() =
   traits_model.test()
   tfi_model.test()
   tc_model.test()
+  tcext_model.test()
 

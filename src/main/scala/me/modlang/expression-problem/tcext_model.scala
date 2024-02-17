@@ -2,7 +2,9 @@ package me
 package modlang
 package expression_problem
 
-package tc_model:
+package tcext_model:
+  import tc_model.{*, given}
+
   enum CtxNeg { case Pos; case Neg }
 
   given pushDown[T](using l: Lang[T]) : Lang[CtxNeg => T] = new Lang[CtxNeg => T]:
@@ -51,7 +53,6 @@ package tc_model:
   def fold[T](e: Folded[T])(using l: Lang[T]): T = e.to(l)
 
   def test() =
-    test_base()
     import syntax.*
     def ex[T : Lang : LangN] = neg(lit(-10) + neg(lit(5)))
     val negStr: String = fold(pushNeg(ex))

@@ -30,7 +30,7 @@ package tc_model:
     def neg[T](e: T)(using l: LangN[T]): T = l.neg(e)
     extension [T](lhs: T) def +(rhs: T)(using l: Lang[T]): T = l.add(lhs, rhs)
 
-  def test_base() =
+  def test() =
     import syntax.*
     def ex[T : Lang : LangN] = neg(lit(-10) + neg(lit(5)))
     println(s"  eval(${ex[String]}) = ${ex[Int]} [typeclass]")
