@@ -48,24 +48,35 @@ package tc_model:
 
   def pushNeg[T](e: CtxNeg => T): T = e(CtxNeg.Pos)
 
-  // given constantFoldLang[T](using l: Lang[T] with LangN[T]): Lang[CtxNeg => T] with LangN[CtxNeg => T] = new Lang[CtxNeg => T] with LangN[CtxNeg => T]:
-    // def lit(value: String)
-
   enum Folded[T]:
-    case F(t: T)
-    def value() = this match { case F(t) => t }
-    def map(f: T => T): Folded[T] = this match { case F(t) => F(f(t)) }
+    case Dynamic(t: T)
+    case ConstantInt(value: Int)
+    def to(l: Lang[T]): T =
+      this match
+        case Dynamic(t) => t
+        case ConstantInt(value) => l.lit(value)
+    def map(fT: T => T, fInt: Int => Int): Folded[T] =
+      this match
+        case Dynamic(t) => Dynamic(fT(t))
+        case ConstantInt(value) => ConstantInt(fInt(value))
 
-  given cf[T](using l: Lang[T]): Lang[Folded[T]] = new Lang[Folded[T]]:
-    def lit(value: Int) = Folded.F(l.lit(value - 100))
-    def add(lhs: Folded[T], rhs: Folded[T]): Folded[T] = Folded.F(l.add(lhs.value(), rhs.value()))
-  given cfn[T](using l: LangN[T]): LangN[Folded[T]] = new LangN[Folded[T]]:
-    def neg(e: Folded[T]): Folded[T] = e.map(l.neg)
-  def fold[T](e: Folded[T]): T = e match { case Folded.F(t) => t }
+  trait LangAndN[T] extends Lang[T], LangN[T]
+  given cf[T](using l: Lang[T], n: LangN[T]): LangAndN[Folded[T]] = new LangAndN[Folded[T]]:
+    def lit(value: Int) = Folded.ConstantInt(value)
+    def add(lhs: Folded[T], rhs: Folded[T]): Folded[T] =
+      (lhs, rhs) match
+      case (Folded.ConstantInt(lhsValue), Folded.ConstantInt(rhsValue)) =>
+        Folded.ConstantInt(lhsValue + rhsValue)
+      case (_, _) =>
+        Folded.Dynamic(l.add(lhs.to(l), rhs.to(l)))
+    def neg(e: Folded[T]): Folded[T] =
+      e.map(n.neg, i => -i)
+
+  def fold(e: Folded[String]): String = e.to(showLang)
 
   def test() =
     def ex[T : Lang : LangN] = neg(lit(-10) + neg(lit(5)))
-    val negStr: Folded[String] = fold(ex)
+    val negStr: String = fold(ex)
     // val negStr: String = pushNeg(ex)
     val result: Int = pushNeg(ex)
     println(s"  eval(${ex[String]}) =opt=> eval(${negStr}) = ${result} [typeclass]")
