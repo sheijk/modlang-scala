@@ -54,7 +54,11 @@ package tcext_model:
 
   def test() =
     import syntax.*
-    def ex[T : Lang : LangN] = neg(lit(-10) + neg(lit(5)))
+    type Ast[T, L[T] <: Lang[T], N[T] <: LangN[T]] = T
+    def ex[T : Lang : LangN] : Ast[T, Lang, LangN] = neg(lit(-10) + neg(lit(5)))
+    // val ex2: [T] =>> Ast[T, Lang] = ex
+    // def opt(x: ) = fold(pushNeg(x))
+    // val ex2 : [T] => T => T = ex
     val negStr: String = fold(pushNeg(ex))
     val result: Int = fold(pushNeg(ex))
     println(s"  eval(${ex[String]}) =opt=> eval(${negStr}) = ${result} [typeclass ext]")
