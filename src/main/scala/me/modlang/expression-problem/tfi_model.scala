@@ -30,4 +30,3 @@ package tfi_model:
   def test() =
     def e(l: LangN): l.Expr = l.add(l.lit(10), l.neg(l.lit(5)))
     println(s"  eval(${e(ShowN())}) => ${e(EvalN())} [tfi]")
-
