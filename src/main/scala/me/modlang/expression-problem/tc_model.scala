@@ -41,16 +41,32 @@ package tc_model:
       case CtxNeg.Pos => l.add(lhs(CtxNeg.Pos), rhs(CtxNeg.Pos))
       case CtxNeg.Neg => l.add(lhs(CtxNeg.Neg), rhs(CtxNeg.Neg))
 
-  given pushDownN[T](using l: LangN[T]) : LangN[CtxNeg => T] = new LangN[CtxNeg => T]:
+  given pushDownN[T : LangN] : LangN[CtxNeg => T] = new LangN[CtxNeg => T]:
     def neg(e: CtxNeg => T): CtxNeg => T =
       case CtxNeg.Pos => e(CtxNeg.Neg)
       case CtxNeg.Neg => e(CtxNeg.Pos)
 
   def pushNeg[T](e: CtxNeg => T): T = e(CtxNeg.Pos)
 
+  // given constantFoldLang[T](using l: Lang[T] with LangN[T]): Lang[CtxNeg => T] with LangN[CtxNeg => T] = new Lang[CtxNeg => T] with LangN[CtxNeg => T]:
+    // def lit(value: String)
+
+  enum Folded[T]:
+    case F(t: T)
+    def value() = this match { case F(t) => t }
+    def map(f: T => T): Folded[T] = this match { case F(t) => F(f(t)) }
+
+  given cf[T](using l: Lang[T]): Lang[Folded[T]] = new Lang[Folded[T]]:
+    def lit(value: Int) = Folded.F(l.lit(value - 100))
+    def add(lhs: Folded[T], rhs: Folded[T]): Folded[T] = Folded.F(l.add(lhs.value(), rhs.value()))
+  given cfn[T](using l: LangN[T]): LangN[Folded[T]] = new LangN[Folded[T]]:
+    def neg(e: Folded[T]): Folded[T] = e.map(l.neg)
+  def fold[T](e: Folded[T]): T = e match { case Folded.F(t) => t }
+
   def test() =
     def ex[T : Lang : LangN] = neg(lit(-10) + neg(lit(5)))
-    val negStr: String = pushNeg(ex)
+    val negStr: Folded[String] = fold(ex)
+    // val negStr: String = pushNeg(ex)
     val result: Int = pushNeg(ex)
     println(s"  eval(${ex[String]}) =opt=> eval(${negStr}) = ${result} [typeclass]")
 
