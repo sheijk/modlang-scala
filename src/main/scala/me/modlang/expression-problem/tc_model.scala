@@ -14,15 +14,15 @@ package tc_model:
   trait LangN[T]:
     def neg(e: T): T
 
-  given showLangN: LangN[String] = new LangN[String]:
+  given showLangN: LangN[String] with
     def neg(e: String): String = s"-$e"
 
-  given evalLang: Lang[Int] = new Lang[Int]:
+  given evalLang: Lang[Int] with
     type Expr = Int
     def lit(value: Int): Int = value
     def add(lhs: Int, rhs: Int): Int = lhs + rhs
 
-  given evalLangN : LangN[Int] = new LangN[Int]:
+  given evalLangN : LangN[Int] with
     def neg(e: Int): Int = -e
 
   object syntax:
