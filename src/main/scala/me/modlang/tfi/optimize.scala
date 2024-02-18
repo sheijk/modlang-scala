@@ -137,27 +137,28 @@ package Optimizer:
   type Ast = [T] => (l: Lang[T]) => l.Expr
 
   object syntax2:
-    def int(value: Int): Ast = [T] => (l: Lang[T]) => l.int(value)
-    def bool(value: Boolean): Ast = [T] => (l: Lang[T]) => l.bool(value)
-    def dummy(msg: String, e: Ast): Ast = [T] => (l: Lang[T]) => l.dummy(msg, e(l))
-
     type Expr = Ast
+    def int(value: Int): Expr = [T] => (l: Lang[T]) => l.int(value)
+    def bool(value: Boolean): Expr = [T] => (l: Lang[T]) => l.bool(value)
+    def dummy(msg: String, e: Expr): Expr = [T] => (l: Lang[T]) => l.dummy(msg, e(l))
+
     def if_(cond: Expr, onTrue: Expr, onFalse: Expr): Expr =
       [T] => (l: Lang[T]) => l.if_(cond(l), onTrue(l), onFalse(l))
-    // def loop(name: String, body: Loop => Expr): Expr =
-    //   [T] => (l: Lang[T]) => l.loop(name, lp => body(l)(lp))
+    def loop(name: String, body: [Loop] => Loop => Expr): Expr =
+      [T] => (l: Lang[T]) => l.loop(name, lp => body(lp)(l))
     // def break(loop: Loop, ret: Expr): Expr
     def block(statements: Expr*): Expr =
       [T] => (l: Lang[T]) =>
-        def app(f: Ast) = f(l)
+        def app(f: Expr) = f(l)
         l.block(statements.map(app)*)
-    def mut(name: String, value: Expr, in: [Ref] => Ref => Expr): Expr =
-      [T] => (l: Lang[T]) => l.mut(name, value(l), r => in(r)(l))
+    type Ref[T] = References.Ref[T]
+    def mut(name: String, value: Expr, in: Ref[Expr] => Expr): Expr =
+      [T] => (l: Lang[T]) => l.mut(name, value(l), (r: Ref[l.Expr]) => in(r)(l))
 
-    extension (lhs: Ast)
-      def +(rhs: Ast): Ast = [T] => (l: Lang[T]) => l.plus(lhs(l), rhs(l))
-      def &(rhs: Ast): Ast = [T] => (l: Lang[T]) => l.and(lhs(l), rhs(l))
-      def >(rhs: Ast): Ast = [T] => (l: Lang[T]) => l.greaterThan(lhs(l), rhs(l))
+    extension (lhs: Expr)
+      def +(rhs: Expr): Expr = [T] => (l: Lang[T]) => l.plus(lhs(l), rhs(l))
+      def &(rhs: Expr): Expr = [T] => (l: Lang[T]) => l.and(lhs(l), rhs(l))
+      def >(rhs: Expr): Expr = [T] => (l: Lang[T]) => l.greaterThan(lhs(l), rhs(l))
 
   def testcases =
     import CaptureLocation.f
@@ -176,13 +177,11 @@ int(2) + int(10) + dummy("foobar", int(123) + int(456))),
         f( int(10), if_(bool(true), int(10), dummy("", int(100)))),
         f( int(3),
             block(int(1), int(2), int(3))),
-        f( mut("foo", int(100), [T] => (foo: T) => int(123)),
-           mut("foo", int(100), [T] => (foo: T) => int(123))),
-        // f(
-        //   mut("foo", int(100), foo => foo.get()),
-        //   
-        //     mut("foo", int(100), foo =>
-        //       block(int(1), int(2), foo.get()))),
+        f( mut("foo", int(100), [T <: Ref[_]] => (foo: T) => int(123)),
+           mut("foo", int(100), [T <: Ref[_]] => (foo: T) => int(123))),
+        f(mut("foo", int(100), [T <: Ref[_]] => (foo: T) => foo.get()),
+          mut("foo", int(100), [T] => (foo: Ref[T]) =>
+          block(int(1), int(2), foo.get()))),
     )
 
   def opt[T](langs: (Lang[T], Lang[String])): (Lang[T], Lang[String]) =
