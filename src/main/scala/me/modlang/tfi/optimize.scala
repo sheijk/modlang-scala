@@ -134,47 +134,55 @@ package Optimizer:
       Imperative.Dup[String, Lang[String]],
       Dummy.Dup[String, Lang[String]]
 
+  type Ast = [T] => (l: Lang[T]) => l.Expr
+
+  object syntax2:
+    def int(value: Int): Ast = [T] => (l: Lang[T]) => l.int(value)
+    def bool(value: Boolean): Ast = [T] => (l: Lang[T]) => l.bool(value)
+    def dummy(msg: String, e: Ast): Ast = [T] => (l: Lang[T]) => l.dummy(msg, e(l))
+
+    type Expr = Ast
+    def if_(cond: Expr, onTrue: Expr, onFalse: Expr): Expr =
+      [T] => (l: Lang[T]) => l.if_(cond(l), onTrue(l), onFalse(l))
+    // def loop(name: String, body: Loop => Expr): Expr =
+    //   [T] => (l: Lang[T]) => l.loop(name, lp => body(l)(lp))
+    // def break(loop: Loop, ret: Expr): Expr
+    def block(statements: Expr*): Expr =
+      [T] => (l: Lang[T]) =>
+        def app(f: Ast) = f(l)
+        l.block(statements.map(app)*)
+    def mut(name: String, value: Expr, in: [Ref] => Ref => Expr): Expr =
+      [T] => (l: Lang[T]) => l.mut(name, value(l), r => in(r)(l))
+
+    extension (lhs: Ast)
+      def +(rhs: Ast): Ast = [T] => (l: Lang[T]) => l.plus(lhs(l), rhs(l))
+      def &(rhs: Ast): Ast = [T] => (l: Lang[T]) => l.and(lhs(l), rhs(l))
+      def >(rhs: Ast): Ast = [T] => (l: Lang[T]) => l.greaterThan(lhs(l), rhs(l))
+
   def testcases =
     import CaptureLocation.f
     // Calc.testcases ++
+    import syntax2.*
     List(
-        f([T] => (l: Lang[T]) => l.int(15),
-          [T] => (l: Lang[T]) =>
-              l.plus(l.int(5), l.int(10))),
-        f([T] => (l: Lang[T]) => l.bool(true),
-          [T] => (l: Lang[T]) =>
-              l.and(l.bool(true), l.bool(true))),
-        f([T] => (l: Lang[T]) => l.bool(false),
-          [T] => (l: Lang[T]) =>
-              l.greaterThan(l.int(5), l.int(10))),
-        f([T] => (l: Lang[T]) => l.int(17),
-          [T] => (l: Lang[T]) =>
-              l.plus(l.plus(l.int(5), l.int(10)), l.int(2))),
-        f([T] => (l: Lang[T]) => l.bool(true),
-          [T] => (l: Lang[T]) =>
-              l.greaterThan(l.plus(l.int(5), l.int(10)), l.int(5))),
-        f([T] => (l: Lang[T]) => l.bool(true),
-          [T] => (l: Lang[T]) =>
-            l.and(
-              l.greaterThan(l.plus(l.int(5), l.int(10)), l.int(5)),
-              l.greaterThan(l.plus(l.int(3), l.int(4)), l.plus(l.int(2), l.int(3))))),
+        f(int(15), int(5) + int(10)),
+        f(bool(true), bool(true) & bool(true)),
+        f(bool(false), int(5) > int(10)),
+        f( int(17), int(5) + int(10) + int(2)),
+        f( bool(true), int(5) + int(10) > int(5)),
+        f( bool(true), int(5) + int(10) > int(5) & int(3) + int(4) > int(2) + int(3)),
         // Dummy won't get optimized
-        f([T] => (l: Lang[T]) => l.plus(l.int(12), l.dummy("foobar", l.int(579))),
-          [T] => (l: Lang[T]) =>
-            l.plus(l.plus(l.int(2), l.int(10)), l.dummy("foobar", l.plus(l.int(123), l.int(456))))),
-        f([T] => (l: Lang[T]) => l.int(10),
-          [T] => (l: Lang[T]) =>
-            l.if_(l.bool(true), l.int(10), l.dummy("", l.int(100)))),
-        f([T] => (l: Lang[T]) => l.int(3),
-          [T] => (l: Lang[T]) =>
-            l.block(l.int(1), l.int(2), l.int(3))),
-        f([T] => (l: Lang[T]) => l.mut("foo", l.int(100), foo => l.int(123)),
-          [T] => (l: Lang[T]) => l.mut("foo", l.int(100), foo => l.int(123))),
-        f([T] => (l: Lang[T]) =>
-          l.mut("foo", l.int(100), foo => foo.get()),
-          [T] => (l: Lang[T]) =>
-            l.mut("foo", l.int(100), foo =>
-              l.block(l.int(1), l.int(2), foo.get()))),
+        f( int(12) + dummy("foobar", int(579)),
+int(2) + int(10) + dummy("foobar", int(123) + int(456))),
+        f( int(10), if_(bool(true), int(10), dummy("", int(100)))),
+        f( int(3),
+            block(int(1), int(2), int(3))),
+        f( mut("foo", int(100), [T] => (foo: T) => int(123)),
+           mut("foo", int(100), [T] => (foo: T) => int(123))),
+        // f(
+        //   mut("foo", int(100), foo => foo.get()),
+        //   
+        //     mut("foo", int(100), foo =>
+        //       block(int(1), int(2), foo.get()))),
     )
 
   def opt[T](langs: (Lang[T], Lang[String])): (Lang[T], Lang[String]) =
