@@ -22,7 +22,7 @@ package Algo_calc_bindings:
   trait EvalMixin[T] extends Lang[T], Bindings.EvalMixin[T] , Algo_calc.EvalMixin[T]
 
   type Value = Algo_calc.Value
-  class Eval extends EvalMixin[Value], EvalFnIntBool[Value]
+  class Eval extends Lang[Value], EvalMixin[Value], EvalFnIntBool[Value]
   given Eval()
 
   def testcases =
@@ -42,3 +42,21 @@ package Algo_calc_bindings:
         let("y", plus(int(100), int(200)), y =>
         plus(x, y)))),
     )
+
+  object Test:
+    type Ast[L[_] <: Empty.Lang[?]] = [T] => (l: L[T]) => l.Expr
+
+    def int(v: Int): Ast[Calc_int.Lang] = [T] => (l: Calc_int.Lang[T]) => l.int(v)
+    def let(name: String, value: Ast[Lang], in: [T] => (l: Lang[T]) => l.Expr => Ast[Lang]): Ast[Lang] =
+      [T] => (l: Lang[T]) =>
+        def body(b: l.Expr): l.Expr = in(l)(b)(l);
+        l.let(name, value(l), body)
+
+    def check(ex: Ast[Lang]) =
+      val source: String = ex(ToString())
+      def eval(l: Lang[Value], ex: Ast[Lang]): Value = l.eval(ex(l))
+      val result: Value = eval(Eval(), ex)
+      println(s"eval($source) = $result")
+
+    check(int(10))
+    check(let("foo", int(10), [T] => (l: Lang[T]) => (foo: l.Expr) => int(0)))

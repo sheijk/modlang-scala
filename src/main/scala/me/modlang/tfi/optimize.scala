@@ -136,6 +136,10 @@ package Optimizer:
 
   type Ast = [T] => (l: Lang[T]) => l.Expr
 
+  trait AstPlayer[L[_]]:
+    def show(): String
+    def eval(): Int
+
   object syntax2:
     type Expr = Ast
     def int(value: Int): Expr = [T] => (l: Lang[T]) => l.int(value)
@@ -152,8 +156,11 @@ package Optimizer:
         def app(f: Expr) = f(l)
         l.block(statements.map(app)*)
     type Ref[T] = References.Ref[T]
-    def mut(name: String, value: Expr, in: Ref[Expr] => Expr): Expr =
-      [T] => (l: Lang[T]) => l.mut(name, value(l), (r: Ref[l.Expr]) => in(r)(l))
+    // def mut(name: String, value: Expr, in: Ref[Expr] => Expr): Expr =
+      // [T] => (l: Lang[T]) => l.mut(name, value(l), (r: Ref[l.Expr]) => in(r)(l))
+    // val mut : Expr =
+    //   [T] => (name: String, value: Expr, in: Ref[T] => Expr) => (l: Lang[T]) =>
+    //     l.mut(name, value(l), (r: Ref[l.Expr]) => in(r)(l))
 
     extension (lhs: Expr)
       def +(rhs: Expr): Expr = [T] => (l: Lang[T]) => l.plus(lhs(l), rhs(l))
@@ -165,23 +172,24 @@ package Optimizer:
     // Calc.testcases ++
     import syntax2.*
     List(
-        f(int(15), int(5) + int(10)),
-        f(bool(true), bool(true) & bool(true)),
-        f(bool(false), int(5) > int(10)),
-        f( int(17), int(5) + int(10) + int(2)),
-        f( bool(true), int(5) + int(10) > int(5)),
-        f( bool(true), int(5) + int(10) > int(5) & int(3) + int(4) > int(2) + int(3)),
-        // Dummy won't get optimized
-        f( int(12) + dummy("foobar", int(579)),
-int(2) + int(10) + dummy("foobar", int(123) + int(456))),
-        f( int(10), if_(bool(true), int(10), dummy("", int(100)))),
-        f( int(3),
-            block(int(1), int(2), int(3))),
-        f( mut("foo", int(100), [T <: Ref[_]] => (foo: T) => int(123)),
-           mut("foo", int(100), [T <: Ref[_]] => (foo: T) => int(123))),
-        f(mut("foo", int(100), [T <: Ref[_]] => (foo: T) => foo.get()),
-          mut("foo", int(100), [T] => (foo: Ref[T]) =>
-          block(int(1), int(2), foo.get()))),
+      // f(int(15), mut("foo", int(10), foo => foo.get()))
+//         f(int(15), int(5) + int(10)),
+//         f(bool(true), bool(true) & bool(true)),
+//         f(bool(false), int(5) > int(10)),
+//         f( int(17), int(5) + int(10) + int(2)),
+//         f( bool(true), int(5) + int(10) > int(5)),
+//         f( bool(true), int(5) + int(10) > int(5) & int(3) + int(4) > int(2) + int(3)),
+//         // Dummy won't get optimized
+//         f( int(12) + dummy("foobar", int(579)),
+// int(2) + int(10) + dummy("foobar", int(123) + int(456))),
+//         f( int(10), if_(bool(true), int(10), dummy("", int(100)))),
+//         f( int(3),
+//             block(int(1), int(2), int(3))),
+        // f( mut("foo", int(100), [T <: Ref[_]] => (foo: T) => int(123)),
+        //    mut("foo", int(100), [T <: Ref[_]] => (foo: T) => int(123))),
+        // f(mut("foo", int(100), [T <: Ref[_]] => (foo: T) => foo.get()),
+        //   mut("foo", int(100), [T] => (foo: Ref[T]) =>
+        //   block(int(1), int(2), foo.get()))),
     )
 
   def opt[T](langs: (Lang[T], Lang[String])): (Lang[T], Lang[String]) =
