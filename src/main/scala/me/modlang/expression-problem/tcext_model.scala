@@ -73,12 +73,13 @@ package tcext_model:
 
   def test() =
     import syntax.*
+    type Ast = [T] => LangC[T] => T
     def exF[T : LangC] = neg(lit(-10) + neg(lit(5)))
-    val ex = [T] => (l: LangC[T]) => exF(using l)
-    // def exDef[T](l: LangC[T]): T = ex2(l)
+    val ex : Ast = [T] => (l: LangC[T]) => exF(using l)
+    // def exAsPolyMethod[T](l: LangC[T]): T = ex(l)
     // def f[T: LangC](f: LangC[T] => T) = f(summon[LangC[T]])
-    def f2[T : LangC](f: [T2] => (LangC[T2]) => T2): T = f(summon[LangC[T]])
-    val negStr: String = pushNeg(fold(f2(ex)))
-    val result: Int = f2(ex)
-    println(s"  eval(${f2(ex):String}) =opt=> eval(${negStr}) = ${result} [typeclass ext]")
+    def f[T : LangC](f: [T2] => (LangC[T2]) => T2): T = f(summon[LangC[T]])
+    val negStr: String = pushNeg(fold(f(ex)))
+    val result: Int = f(ex)
+    println(s"  eval(${f(ex):String}) =opt=> eval(${negStr}) = ${result} [typeclass ext]")
 

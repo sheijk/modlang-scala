@@ -86,3 +86,7 @@ CLOSED: [2024-01-28 Sun 17:03]
 :PROPERTIES:
 :CREATED:  <2024-02-12 Mon 16:09>
 :END:
+* TODO [[https://github.com/lampepfl/dotty/issues/6892][Polymorphic function parameter types not inferred · Issue #6892 · lampepfl/dotty]]
+:PROPERTIES:
+:CREATED:  <2024-02-18 Sun 19:25>
+:END:
