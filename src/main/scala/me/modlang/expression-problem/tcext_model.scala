@@ -41,7 +41,13 @@ package tcext_model:
         case ConstantInt(value) => ConstantInt(fInt(value))
 
   object Folded:
-    def map2[T](lhs: Folded[T], rhs: Folded[T], f: (T, T) => T, fConstant: (Int, Int) => Int)(using l: Lang[T]): Folded[T] =
+    def map2[T](
+        lhs: Folded[T],
+        rhs: Folded[T],
+        f: (T, T) => T,
+        fConstant: (Int, Int) => Int)
+        (using l: Lang[T])
+        : Folded[T] =
       (lhs, rhs) match
       case (Folded.ConstantInt(lhsValue), Folded.ConstantInt(rhsValue)) =>
         Folded.ConstantInt(fConstant(lhsValue, rhsValue))
@@ -61,14 +67,18 @@ package tcext_model:
   given evalC : LangC[Int] with EvalLang with EvalLangN with {}
   given showC : LangC[String] with ShowLang with ShowLangN with {}
 
+  // given evalF(using l: LangC[Int]) : LangC[[T] => (l: LangC[T]) => T] = ???
+  // given showF(using l: LangC[String]) : LangC[(l: LangC[String]) => String] = ???
+  case class Wrap[T](t: T)
+
   def test() =
     import syntax.*
-    type Ast[T, L[T] <: Lang[T], N[T] <: LangN[T]] = T
-    def ex[T : LangC] : Ast[T, Lang, LangN] = neg(lit(-10) + neg(lit(5)))
-    val negStr: String = pushNeg(fold(ex))
-    // val negStr: String = fold(pushNeg(ex))
-    // val result: Int = fold(pushNeg(ex))
-    // val negStr: String = ex
-    val result: Int = pushNeg(fold(ex))
-    println(s"  eval(${ex[String]}) =opt=> eval(${negStr}) = ${result} [typeclass ext]")
+    def exF[T : LangC] = neg(lit(-10) + neg(lit(5)))
+    val ex = [T] => (l: LangC[T]) => exF(using l)
+    // def exDef[T](l: LangC[T]): T = ex2(l)
+    // def f[T: LangC](f: LangC[T] => T) = f(summon[LangC[T]])
+    def f2[T : LangC](f: [T2] => (LangC[T2]) => T2): T = f(summon[LangC[T]])
+    val negStr: String = pushNeg(fold(f2(ex)))
+    val result: Int = f2(ex)
+    println(s"  eval(${f2(ex):String}) =opt=> eval(${negStr}) = ${result} [typeclass ext]")
 

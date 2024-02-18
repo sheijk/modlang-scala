@@ -2,6 +2,8 @@ package me
 package modlang
 package expression_problem
 
+// Approach following this translation of Oleg's paper
+// https://gist.github.com/OlivierBlanvillain/48bb5c66dbb0557da50465809564ee80
 package tc_model:
   trait Lang[T]:
     def lit(value: Int): T
