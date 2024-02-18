@@ -7,23 +7,27 @@ package tc_model:
     def lit(value: Int): T
     def add(lhs: T, rhs: T): T
 
-  given showLang: Lang[String] = new Lang[String]:
+  trait ShowLang extends Lang[String]:
     def lit(value: Int): String = value.toString()
     def add(lhs: String, rhs: String): String = s"($lhs + $rhs)"
+  given showLang: ShowLang with {}
 
   trait LangN[T]:
     def neg(e: T): T
 
-  given showLangN: LangN[String] with
+  trait ShowLangN extends LangN[String]:
     def neg(e: String): String = s"-$e"
+  given showLangN: ShowLangN with {}
 
-  given evalLang: Lang[Int] with
+  trait EvalLang extends Lang[Int]:
     type Expr = Int
     def lit(value: Int): Int = value
     def add(lhs: Int, rhs: Int): Int = lhs + rhs
+  given evalLang: EvalLang with {}
 
-  given evalLangN : LangN[Int] with
+  trait EvalLangN extends LangN[Int]:
     def neg(e: Int): Int = -e
+  given evalLangN : EvalLangN with {}
 
   object syntax:
     def lit[T](value: Int)(using l: Lang[T]): T = l.lit(value)
