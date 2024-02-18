@@ -85,20 +85,23 @@ package tcext_model:
   // def ast10Impl()(using Quotes) : Expr[Ast] = '{[T] => (l: LangC[T]) => l.lit(10)}
   // inline def ast10(): Ast = ${ ast10Impl() }
 
-  // object syntax2:
-  //   def lit[T](value: Int)(using l: Lang[T]): T = l.lit(value)
-  //   def neg[T](e: T)(using l: LangN[T]): T = l.neg(e)
-  //   extension [T](lhs: T) def +(rhs: T)(using l: Lang[T]): T = l.add(lhs, rhs)
+  object syntax2:
+    def lit(value: Int): Ast = [T] => (l: LangC[T]) => l.lit(value)
+    def neg(e: Ast): Ast = [T] => (l: LangC[T]) => l.neg(e(l))
+    extension (lhs: Ast) def +(rhs: Ast): Ast = [T] => (l: LangC[T]) => l.add(lhs(l), rhs(l))
 
   def test() =
-    import syntax.*
-    def exF[T : LangC] = neg(lit(-10) + neg(lit(5)))
+    // import syntax.*
+    // def exF[T : LangC] = neg(lit(-10) + neg(lit(5)))
     // val ex : Ast = [T] => (l: LangC[T]) => exF(using l)
-    val ex = ast10()
-    // def exAsPolyMethod[T](l: LangC[T]): T = ex(l)
-    // def f[T: LangC](f: LangC[T] => T) = f(summon[LangC[T]])
-    def f[T : LangC](f: [T2] => (LangC[T2]) => T2): T = f(summon[LangC[T]])
-    val negStr: String = pushNeg(fold(f(ex)))
-    val result: Int = f(ex)
-    println(s"  eval(${f(ex):String}) =opt=> eval(${negStr}) = ${result} [typeclass ext]")
+    import syntax2.*
+    val ex = neg(lit(-10) + neg(lit(5)))
+    def f[T : LangC](f: Ast): T = f(summon[LangC[T]])
+    def test(ex: Ast) =
+      val negStr: String = pushNeg(fold(f(ex)))
+      val result: Int = f(ex)
+      println(s"  eval(${f(ex):String}) =opt=> eval(${negStr}) = ${result} [typeclass ext]")
+    test(ex)
+    test(lit(1) + lit(2) + lit(3))
+    List(lit(0), lit(10), lit(5) + lit(6)).foreach(test)
 
