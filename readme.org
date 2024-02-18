@@ -78,3 +78,26 @@ CLOSED: [2024-01-28 Sun 17:03]
 :PROPERTIES:
 :CREATED:  <2024-02-11 Sun 00:08>
 :END:
+* TODO bad error report
+:PROPERTIES:
+:CREATED:  <2024-02-18 Sun 22:37>
+:END:
+
+#+begin_src scala
+def check(ex: Ast[Lang]) =
+  val source: String = ex(ToString())
+  def eval(l: Lang[Value])(ex: Ast[Lang]): Value = l.eval(ex(l))
+  val result: Value = eval(Eval(), ex)
+  println(s"eval($source) = $result")
+#+end_src
+
+#+begin_quote
+[error] -- [E007] Type Mismatch Error: /Users/jr/Documents/Development/modular-lang-proto/external/temp/modlang/src/main/scala/me/modlang/tfi/algo_calc_bindings.scala:54:31 
+[error] 54 |      val result: Value = eval(Eval(), ex)
+[error]    |                               ^^^^^^^^^^
+[error]    |     Found:    (me.modlang.tfi.Algo_calc_bindings.Eval,
+[error]    |       me.modlang.tfi.Algo_calc_bindings.Test.Ast[me.modlang.tfi.Algo_calc_bindings.Lang])
+[error]    |     Required: me.modlang.tfi.Algo_calc_bindings.Lang[me.modlang.tfi.Algo_calc_bindings.Value]
+#+end_quote
+
+Created from [[file:/Users/jr/Development/modular-lang-proto/external/temp/modlang/src/main/scala/me/modlang/tfi/algo_calc_bindings.scala::51]]
