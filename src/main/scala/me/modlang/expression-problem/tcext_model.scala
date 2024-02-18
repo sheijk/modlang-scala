@@ -4,6 +4,7 @@ package expression_problem
 
 package tcext_model:
   import tc_model.*
+  import scala.quoted.*
 
   enum CtxNeg { case Pos; case Neg }
 
@@ -70,12 +71,30 @@ package tcext_model:
   // given evalF(using l: LangC[Int]) : LangC[[T] => (l: LangC[T]) => T] = ???
   // given showF(using l: LangC[String]) : LangC[(l: LangC[String]) => String] = ???
   case class Wrap[T](t: T)
+  type Ast = [T] => LangC[T] => T
+
+  // def convert(x: Expr[Any])(using Quotes): Expr[Any] = '{[T] => (l: Lang[T]) => l.lit(10)}
+  def ast(x: Expr[Any])(using Quotes): Expr[Any] = '{
+    def tmp[T: LangC] = $x;
+    val ex = [T] => (l: LangC[T]) => tmp(using l);
+    ex
+  }
+
+  // def ast10() : Ast = [T] => (l: LangC[T]) => l.lit(10)
+
+  // def ast10Impl()(using Quotes) : Expr[Ast] = '{[T] => (l: LangC[T]) => l.lit(10)}
+  // inline def ast10(): Ast = ${ ast10Impl() }
+
+  // object syntax2:
+  //   def lit[T](value: Int)(using l: Lang[T]): T = l.lit(value)
+  //   def neg[T](e: T)(using l: LangN[T]): T = l.neg(e)
+  //   extension [T](lhs: T) def +(rhs: T)(using l: Lang[T]): T = l.add(lhs, rhs)
 
   def test() =
     import syntax.*
-    type Ast = [T] => LangC[T] => T
     def exF[T : LangC] = neg(lit(-10) + neg(lit(5)))
-    val ex : Ast = [T] => (l: LangC[T]) => exF(using l)
+    // val ex : Ast = [T] => (l: LangC[T]) => exF(using l)
+    val ex = ast10()
     // def exAsPolyMethod[T](l: LangC[T]): T = ex(l)
     // def f[T: LangC](f: LangC[T] => T) = f(summon[LangC[T]])
     def f[T : LangC](f: [T2] => (LangC[T2]) => T2): T = f(summon[LangC[T]])

@@ -41,3 +41,8 @@ package tc_model:
     def ex[T : Lang : LangN] = neg(lit(-10) + neg(lit(5)))
     println(s"  eval(${ex[String]}) = ${ex[Int]} [typeclass]")
 
+  import scala.quoted.*
+  import tcext_model.{Ast, LangC}
+  def ast10Impl()(using Quotes) : Expr[Ast] = '{[T] => (l: LangC[T]) => l.lit(10)}
+  inline def ast10(): Ast = ${ ast10Impl() }
+
