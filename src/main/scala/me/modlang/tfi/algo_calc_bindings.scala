@@ -47,9 +47,9 @@ package Algo_calc_bindings:
     type Ast[L[_] <: Empty.Lang[?]] = [T] => (l: L[T]) => l.Expr
 
     def int(v: Int): Ast[Calc_int.Lang] = [T] => (l: Calc_int.Lang[T]) => l.int(v)
-    def let(name: String, value: Ast[Lang], in: [T] => (l: Lang[T]) => l.Expr => Ast[Lang]): Ast[Lang] =
+    def let(name: String, value: Ast[Lang], in: [T] => (l: Lang[T]) => Ast[Lang] => Ast[Lang]): Ast[Lang] =
       [T] => (l: Lang[T]) =>
-        def body(b: l.Expr): l.Expr = in(l)(b)(l);
+        def body(v: l.Expr): l.Expr = int(0)(l);
         l.let(name, value(l), body)
 
     def check(ex: Ast[Lang]) =
@@ -59,4 +59,4 @@ package Algo_calc_bindings:
       println(s"eval($source) = $result")
 
     check(int(10))
-    check(let("foo", int(10), [T] => (l: Lang[T]) => (foo: l.Expr) => int(0)))
+    check(let("foo", int(10), [T] => (l: Lang[T]) => (foo : Ast[Lang]) => foo))
