@@ -7,18 +7,18 @@ package Calc_bool:
     def bool(v: Boolean): Expr
     def and(lhs: Expr, rhs: Expr): Expr
 
-  transparent trait Nested[T, Inner <: Lang[T]] extends Lang[T], Empty.Nested[T, Inner]:
-    override def and(lhs: Expr, rhs: Expr): Expr =
-      toOuter(inner.and(toInner(lhs), toInner(rhs)))
-
-    override def bool(v: Boolean): Expr =
-      toOuter(inner.bool(v))
-
-  trait Dup[T, L <: Lang[T]] extends Lang[T], Empty.Dup[T, L]:
-    override def and(lhs: Expr, rhs: Expr): Expr =
-      (left.and(lhs._1, rhs._1), right.and(lhs._2, rhs._2))
-    override def bool(v: Boolean): Expr =
-      (left.bool(v), right.bool(v))
+  // transparent trait Nested[T, Inner <: Lang[T]] extends Lang[T], Empty.Nested[T, Inner]:
+  //   override def and(lhs: Expr, rhs: Expr): Expr =
+  //     toOuter(inner.and(toInner(lhs), toInner(rhs)))
+  // 
+  //   override def bool(v: Boolean): Expr =
+  //     toOuter(inner.bool(v))
+  // 
+  // trait Dup[T, L <: Lang[T]] extends Lang[T], Empty.Dup[T, L]:
+  //   override def and(lhs: Expr, rhs: Expr): Expr =
+  //     (left.and(lhs._1, rhs._1), right.and(lhs._2, rhs._2))
+  //   override def bool(v: Boolean): Expr =
+  //     (left.bool(v), right.bool(v))
 
   trait ToStringMixin extends Lang[String], EvalId[String]:
     type Expr = String

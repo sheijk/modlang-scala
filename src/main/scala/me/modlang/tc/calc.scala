@@ -6,13 +6,13 @@ package Calc:
   trait Lang[T] extends Calc_int.Lang[T], Calc_bool.Lang[T]:
     def greaterThan(lhs: Expr, rhs: Expr): Expr
 
-  transparent trait Nested[T, Inner <: Lang[T]] extends Lang[T], Calc_int.Nested[T, Inner], Calc_bool.Nested[T, Inner]:
-    override def greaterThan(lhs: Expr, rhs: Expr): Expr =
-      toOuter(inner.greaterThan(toInner(lhs), toInner(rhs)))
-
-  trait Dup[T, L <: Lang[T]] extends Lang[T], Calc_int.Dup[T, L], Calc_bool.Dup[T, L]:
-    override def greaterThan(lhs: Expr, rhs: Expr): Expr =
-      (left.greaterThan(lhs._1, rhs._1), right.greaterThan(lhs._2, rhs._2))
+  // transparent trait Nested[T, Inner <: Lang[T]] extends Lang[T], Calc_int.Nested[T, Inner], Calc_bool.Nested[T, Inner]:
+  //   override def greaterThan(lhs: Expr, rhs: Expr): Expr =
+  //     toOuter(inner.greaterThan(toInner(lhs), toInner(rhs)))
+  // 
+  // trait Dup[T, L <: Lang[T]] extends Lang[T], Calc_int.Dup[T, L], Calc_bool.Dup[T, L]:
+  //   override def greaterThan(lhs: Expr, rhs: Expr): Expr =
+  //     (left.greaterThan(lhs._1, rhs._1), right.greaterThan(lhs._2, rhs._2))
 
   trait ToStringMixin extends Lang[String], Calc_bool.ToStringMixin, Calc_int.ToStringMixin:
     def greaterThan(lhs: Expr, rhs: Expr): Expr = s"($lhs > $rhs)"

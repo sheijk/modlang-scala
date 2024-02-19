@@ -5,15 +5,15 @@ package tc
 package Algo_calc_bindings:
   trait Lang[T] extends Bindings.Lang[T], Algo_calc.Lang[T]
 
-  transparent trait Nested[T, Inner <: Lang[T]] extends
-    Lang[T],
-    Bindings.Nested[T, Inner],
-    Algo_calc.Nested[T, Inner]
-
-  trait Dup[T, L <: Lang[T]] extends
-    Lang[T],
-    Bindings.Dup[T, L],
-    Algo_calc.Dup[T, L]
+  // transparent trait Nested[T, Inner <: Lang[T]] extends
+  //   Lang[T],
+  //   Bindings.Nested[T, Inner],
+  //   Algo_calc.Nested[T, Inner]
+  // 
+  // trait Dup[T, L <: Lang[T]] extends
+  //   Lang[T],
+  //   Bindings.Dup[T, L],
+  //   Algo_calc.Dup[T, L]
 
   trait ToStringMixin extends Lang[String], Algo_calc.ToStringMixin, Bindings.ToStringMixin
   class ToString extends ToStringMixin

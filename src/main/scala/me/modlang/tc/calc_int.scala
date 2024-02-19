@@ -7,19 +7,19 @@ package Calc_int:
     def int(v: Int): Expr
     def plus(lhs: Expr, rhs: Expr): Expr
 
-  transparent trait Nested[T, Inner <: Lang[T]] extends Lang[T], Empty.Nested[T, Inner]:
-    override def int(v: Int): Expr =
-      toOuter(inner.int(v))
-
-    override def plus(lhs: Expr, rhs: Expr): Expr =
-      toOuter(inner.plus(toInner(lhs), toInner(rhs)))
-
-  trait Dup[T, L <: Lang[T]] extends Lang[T], Empty.Dup[T, L]:
-    override def int(v: Int): Expr =
-      (left.int(v), right.int(v))
-
-    override def plus(lhs: Expr, rhs: Expr): Expr =
-      (left.plus(lhs._1, rhs._1), right.plus(lhs._2, rhs._2))
+  // transparent trait Nested[T, Inner <: Lang[T]] extends Lang[T], Empty.Nested[T, Inner]:
+  //   override def int(v: Int): Expr =
+  //     toOuter(inner.int(v))
+  // 
+  //   override def plus(lhs: Expr, rhs: Expr): Expr =
+  //     toOuter(inner.plus(toInner(lhs), toInner(rhs)))
+  // 
+  // trait Dup[T, L <: Lang[T]] extends Lang[T], Empty.Dup[T, L]:
+  //   override def int(v: Int): Expr =
+  //     (left.int(v), right.int(v))
+  // 
+  //   override def plus(lhs: Expr, rhs: Expr): Expr =
+  //     (left.plus(lhs._1, rhs._1), right.plus(lhs._2, rhs._2))
 
   trait ToStringMixin extends Lang[String], EvalId[String]:
     def int(v: Int): String = v.toString()

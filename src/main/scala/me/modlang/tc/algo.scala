@@ -9,32 +9,32 @@ package Algo:
     def loop(name: String, body: Loop => Expr): Expr
     def break(loop: Loop, ret: Expr): Expr
 
-  transparent trait Nested[T, Inner <: Lang[T]] extends Lang[T], Empty.Nested[T, Inner]:
-    type Loop = inner.Loop
-
-    def if_(cond: Expr, onTrue: Expr, onFalse: Expr): Expr =
-      toOuter(inner.if_(toInner(cond), toInner(onTrue), toInner(onFalse)))
-    def loop(name: String, body: Loop => Expr): Expr =
-      toOuter(inner.loop(name, (l: inner.Loop) => toInner(body(l))))
-    def break(loop: Loop, ret: Expr): Expr =
-      toOuter(inner.break(loop, toInner(ret)))
-
-  trait Dup[T, L <: Lang[T]] extends Lang[T], Empty.Dup[T, L]:
-    type Loop = (left.Loop, right.Loop)
-    def if_(cond: Expr, onTrue: Expr, onFalse: Expr): Expr =
-      (left.if_(cond._1, onTrue._1, onFalse._1), right.if_(cond._2, onTrue._2, onFalse._2))
-    def loop(name: String, body: Loop => Expr): Expr =
-      var result: Expr | Null = null
-      left.loop(name, leftL =>
-        right.loop(name, rightL =>
-          result = body((leftL, rightL))
-          result.asInstanceOf[Expr]._2
-          )
-        result.asInstanceOf[Expr]._1)
-      result.asInstanceOf[Expr]
-    def break(loop: Loop, ret: Expr): Expr =
-      (left.break(loop._1, ret._1),
-      right.break(loop._2, ret._2))
+  // transparent trait Nested[T, Inner <: Lang[T]] extends Lang[T], Empty.Nested[T, Inner]:
+  //   type Loop = inner.Loop
+  // 
+  //   def if_(cond: Expr, onTrue: Expr, onFalse: Expr): Expr =
+  //     toOuter(inner.if_(toInner(cond), toInner(onTrue), toInner(onFalse)))
+  //   def loop(name: String, body: Loop => Expr): Expr =
+  //     toOuter(inner.loop(name, (l: inner.Loop) => toInner(body(l))))
+  //   def break(loop: Loop, ret: Expr): Expr =
+  //     toOuter(inner.break(loop, toInner(ret)))
+  // 
+  // trait Dup[T, L <: Lang[T]] extends Lang[T], Empty.Dup[T, L]:
+  //   type Loop = (left.Loop, right.Loop)
+  //   def if_(cond: Expr, onTrue: Expr, onFalse: Expr): Expr =
+  //     (left.if_(cond._1, onTrue._1, onFalse._1), right.if_(cond._2, onTrue._2, onFalse._2))
+  //   def loop(name: String, body: Loop => Expr): Expr =
+  //     var result: Expr | Null = null
+  //     left.loop(name, leftL =>
+  //       right.loop(name, rightL =>
+  //         result = body((leftL, rightL))
+  //         result.asInstanceOf[Expr]._2
+  //         )
+  //       result.asInstanceOf[Expr]._1)
+  //     result.asInstanceOf[Expr]
+  //   def break(loop: Loop, ret: Expr): Expr =
+  //     (left.break(loop._1, ret._1),
+  //     right.break(loop._2, ret._2))
 
   trait ToStringMixin extends Lang[String]:
     type Expr = Result

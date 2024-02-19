@@ -6,14 +6,14 @@ package Bindings:
   trait Lang[T] extends Empty.Lang[T]:
     def let(name: String, value: Expr, in: Expr => Expr): Expr
 
-  transparent trait Nested[T, Inner <: Lang[T]] extends Lang[T], Empty.Nested[T, Inner]:
-    def let(name: String, value: Expr, in: Expr => Expr): Expr =
-      toOuter(inner.let(name, toInner(value), v => toInner(in(toOuter(v)))))
-
-  trait Dup[T, L <: Lang[T]] extends Lang[T], Empty.Dup[T, L]:
-    def let(name: String, value: Expr, in: Expr => Expr): Expr =
-      (left.let(name, value._1, v => ((v,v))._1),
-      right.let(name, value._2, v => ((v,v))._2))
+  // transparent trait Nested[T, Inner <: Lang[T]] extends Lang[T], Empty.Nested[T, Inner]:
+  //   def let(name: String, value: Expr, in: Expr => Expr): Expr =
+  //     toOuter(inner.let(name, toInner(value), v => toInner(in(toOuter(v)))))
+  // 
+  // trait Dup[T, L <: Lang[T]] extends Lang[T], Empty.Dup[T, L]:
+  //   def let(name: String, value: Expr, in: Expr => Expr): Expr =
+  //     (left.let(name, value._1, v => ((v,v))._1),
+  //     right.let(name, value._2, v => ((v,v))._2))
 
   trait ToStringMixin extends Lang[String], EvalId[String]:
     def let(name: String, value: Expr, in: Expr => Expr): Expr =

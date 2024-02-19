@@ -41,7 +41,7 @@ def demo() =
   runProgram[Calc.Value, Calc.Lang](simple.asInstanceOf[Calc.Program])
   runProgram[Calc.Value, Calc.Lang](calc)
   imperativeDemo()
-  Optimizer.demo()
+  // Optimizer.demo()
 
 def imperativeDemo() =
   val program = [T] => (l: Imperative.Lang[T]) =>
