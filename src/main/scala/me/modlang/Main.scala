@@ -33,5 +33,6 @@ def andreMode() =
   typeclass.demo()
   tfi.demo()
   expression_problem.demo()
+  tc.demo()
 
   println("─" * 100)
