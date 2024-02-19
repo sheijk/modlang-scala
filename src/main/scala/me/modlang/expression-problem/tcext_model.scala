@@ -4,7 +4,6 @@ package expression_problem
 
 package tcext_model:
   import tc_model.{*, given}
-  import scala.quoted.*
 
   enum CtxNeg { case Pos; case Neg }
 
@@ -74,22 +73,7 @@ package tcext_model:
     with NestedLang[T](l)
     with NestedLangN[T](n)
 
-  // given evalF(using l: LangC[Int]) : LangC[[T] => (l: LangC[T]) => T] = ???
-  // given showF(using l: LangC[String]) : LangC[(l: LangC[String]) => String] = ???
-  case class Wrap[T](t: T)
   type Ast = [T] => LangC[T] => T
-
-  // def convert(x: Expr[Any])(using Quotes): Expr[Any] = '{[T] => (l: Lang[T]) => l.lit(10)}
-  def ast(x: Expr[Any])(using Quotes): Expr[Any] = '{
-    def tmp[T: LangC] = $x;
-    val ex = [T] => (l: LangC[T]) => tmp(using l);
-    ex
-  }
-
-  // def ast10() : Ast = [T] => (l: LangC[T]) => l.lit(10)
-
-  // def ast10Impl()(using Quotes) : Expr[Ast] = '{[T] => (l: LangC[T]) => l.lit(10)}
-  // inline def ast10(): Ast = ${ ast10Impl() }
 
   object syntax2:
     def lit(value: Int): Ast = [T] => (l: LangC[T]) => l.lit(value)
@@ -97,9 +81,6 @@ package tcext_model:
     extension (lhs: Ast) def +(rhs: Ast): Ast = [T] => (l: LangC[T]) => l.add(lhs(l), rhs(l))
 
   def test() =
-    // import syntax.*
-    // def exF[T : LangC] = neg(lit(-10) + neg(lit(5)))
-    // val ex : Ast = [T] => (l: LangC[T]) => exF(using l)
     import syntax2.*
     val ex = neg(lit(-10) + neg(lit(5)))
     def f[T : LangC](f: Ast): T = f(summon[LangC[T]])
