@@ -206,3 +206,27 @@ package Optimizer:
     val s : Lang[String] = l._2
     testcases.foreach(runTestLoc[Value, Lang](_, Eval(), ToString(), e, s))
 
+// package Pipeline_proto:
+//   trait Lang[T]:
+//     type Expr
+//     def extract(e: Expr): T
+//     type Result = T
+// 
+//   type Program = [T] => (l: Lang[T]) => l.Expr
+//   def build(p: Program, l: Lang[?]): l.Expr = p(l)
+//   def run[T](p: Program, l: Lang[T]): T = l.extract(build(p, l))
+//   // def transform[L[_] <: Lang[?]](p: Program, f : [T] => (l: Lang[T]) => Lang[T], l: L[?]): l.Expr = ???
+// 
+//   def demo() =
+//     // def semantic(p: Program, l: Lang[?]) = p(l |> desugar |> typecheck)
+//     def compileAndRun(p: Program, vm: StackL, opt :Boolean) =
+//       val source: String = p(showL)
+//       val vm =
+//         if opt then p |> desugar |> typecheck |> highOpt |> lower |> lowOpt
+//         else  p |> desugar |> typecheck |> lower
+//       val eval = vm |> evalVm
+//       val compiled = vm |> compileVm
+//       compiled()
+// 
+//   // type Program[L[_] <: Lang[?]] = [T] => (l: L[T]) => l.Expr
+//   // def build[Lang](p: Program[Lang], l) = p(l)
