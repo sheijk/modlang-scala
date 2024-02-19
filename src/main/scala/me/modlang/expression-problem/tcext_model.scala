@@ -3,7 +3,7 @@ package modlang
 package expression_problem
 
 package tcext_model:
-  import tc_model.*
+  import tc_model.{*, given}
   import scala.quoted.*
 
   enum CtxNeg { case Pos; case Neg }
@@ -65,8 +65,14 @@ package tcext_model:
 
   def fold[T](e: Folded[T])(using l: Lang[T]): T = e.to(l)
 
-  given evalC : LangC[Int] with EvalLang with EvalLangN with {}
-  given showC : LangC[String] with ShowLang with ShowLangN with {}
+  trait NestedLang[T](l: Lang[T]):
+    def lit(value: Int): T = l.lit(value)
+    def add(lhs: T, rhs: T): T = l.add(lhs, rhs)
+  trait NestedLangN[T](n: LangN[T]):
+    def neg(e: T): T = n.neg(e)
+  given combine[T](using l: Lang[T], n: LangN[T]) : LangC[T] = new LangC[T]
+    with NestedLang[T](l)
+    with NestedLangN[T](n)
 
   // given evalF(using l: LangC[Int]) : LangC[[T] => (l: LangC[T]) => T] = ???
   // given showF(using l: LangC[String]) : LangC[(l: LangC[String]) => String] = ???
