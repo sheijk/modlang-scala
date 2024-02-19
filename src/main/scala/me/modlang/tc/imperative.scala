@@ -5,9 +5,9 @@ package tc
 package Imperative:
   trait Lang[T] extends References.Lang[T], Algo_calc_bindings.Lang[T], Blocks.Lang[T]
 
-  // trait Nested[T, Inner <: Lang[T]] extends Lang[T], References.Nested[T, Inner] , Algo_calc_bindings.Nested[T, Inner], Blocks.Nested[T, Inner]
-  // 
-  // trait Dup[T, L <: Lang[T]] extends Lang[T], References.Dup[T, L] , Algo_calc_bindings.Dup[T, L], Blocks.Dup[T, L]
+  trait Nested[T, Inner <: Lang[T]] extends Lang[T], References.Nested[T, Inner] , Algo_calc_bindings.Nested[T, Inner], Blocks.Nested[T, Inner]
+
+  trait Dup[T, L <: Lang[T]] extends Lang[T], References.Dup[T, L] , Algo_calc_bindings.Dup[T, L], Blocks.Dup[T, L]
 
   trait ToStringMixin extends Lang[String], Algo_calc_bindings.ToStringMixin, References.ToStringMixin, Blocks.ToStringMixin
   given ToStringMixin()

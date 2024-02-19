@@ -11,18 +11,18 @@ package Empty:
     type Result = T
     def eval(e: Expr): T
 
-  // transparent trait Nested[T, Inner <: Lang[T]](inner_ : Inner) extends Lang[T]:
-  //   val inner = inner_
-  //   def toOuter(e: inner.Expr): Expr
-  //   def toInner(e: Expr): inner.Expr
-  // 
-  //   override def eval(e: Expr): Result =
-  //     inner.eval(toInner(e))
-  // 
-  // trait Dup[T, L <: Lang[T]](val left : L, val right : L, mergeLangs: (T, T) => T) extends Lang[T]:
-  //   type Expr = (left.Expr, right.Expr)
-  //   override def eval(e: Expr) =
-  //     mergeLangs(left.eval(e._1), right.eval(e._2))
+  transparent trait Nested[T, Inner <: Lang[T]](inner_ : Inner) extends Lang[T]:
+    val inner = inner_
+    def toOuter(e: inner.Expr): Expr
+    def toInner(e: Expr): inner.Expr
+
+    override def eval(e: Expr): Result =
+      inner.eval(toInner(e))
+
+  trait Dup[T, L <: Lang[T]](val left : L, val right : L, mergeLangs: (T, T) => T) extends Lang[T]:
+    type Expr = (left.Expr, right.Expr)
+    override def eval(e: Expr) =
+      mergeLangs(left.eval(e._1), right.eval(e._2))
 
 trait EvalHasBool[T] extends Empty.Lang[T]:
   def fromBool(v: Boolean): Expr
