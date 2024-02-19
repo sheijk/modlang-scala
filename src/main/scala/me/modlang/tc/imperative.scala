@@ -9,8 +9,18 @@ package Imperative:
 
   trait Dup[T, L <: Lang[T]] extends Lang[T], References.Dup[T, L] , Algo_calc_bindings.Dup[T, L], Blocks.Dup[T, L]
 
-  trait ToStringMixin extends Lang[String], Algo_calc_bindings.ToStringMixin, References.ToStringMixin, Blocks.ToStringMixin
-  given ToStringMixin()
+  // trait ToStringMixin extends Lang[String], Algo_calc_bindings.ToStringMixin, References.ToStringMixin, Blocks.ToStringMixin
+  // given ToStringMixin()
+
+  given convert[T]
+      (using r: References.Lang[T])
+      (using acb: Algo_calc_bindings.Lang[T])
+      (using b: Blocks.Lang[T])
+      : Lang[T] = new Lang[T]
+      with References.Nested[T, References.Lang[T]]
+      with Algo_calc_bindings.Nested[T, Algo_calc_bindings.Lang[T]]
+      with Blocks.Nested[T, Blocks.Lang[T]]
+      with Empty.Nested[T, Empty.Lang[T]](acb)
 
   type Value = Algo_calc_bindings.Value
   trait EvalMixin[T] extends Lang[T], References.EvalMixin[T] , Algo_calc_bindings.EvalMixin[T], Blocks.EvalMixin[T]
