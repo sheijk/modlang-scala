@@ -10,14 +10,11 @@ package Imperative:
   // trait Dup[T, L <: Lang[T]] extends Lang[T], References.Dup[T, L] , Algo_calc_bindings.Dup[T, L], Blocks.Dup[T, L]
 
   trait ToStringMixin extends Lang[String], Algo_calc_bindings.ToStringMixin, References.ToStringMixin, Blocks.ToStringMixin
-  class ToString extends ToStringMixin
-  given ToString()
-
-  trait EvalMixin[T] extends Lang[T], References.EvalMixin[T] , Algo_calc_bindings.EvalMixin[T], Blocks.EvalMixin[T]
+  given ToStringMixin()
 
   type Value = Algo_calc_bindings.Value
-  class Eval extends EvalMixin[Value], EvalFnIntBool[Value]
-  given Eval()
+  trait EvalMixin[T] extends Lang[T], References.EvalMixin[T] , Algo_calc_bindings.EvalMixin[T], Blocks.EvalMixin[T]
+  given EvalMixin[Value] with EvalFnIntBool[Value] with {}
 
   def testcases =
     import CaptureLocation.f

@@ -46,9 +46,7 @@ package Algo:
 
     def break(loop: Loop, ret: Expr): Expr =
       s"(break $loop :with $ret)"
-
-  class ToString extends ToStringMixin, EvalId[String]
-  given ToString()
+  given ToStringMixin with EvalId[String] with {}
 
   case class LoopBreak[Value](name: String, value: Value) extends Exception
 
@@ -68,5 +66,3 @@ package Algo:
     def break(loop: Loop, ret: Expr): Expr =
       () =>
         throw LoopBreak[T](loop, ret())
-
-

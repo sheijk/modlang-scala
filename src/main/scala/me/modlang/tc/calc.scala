@@ -16,17 +16,12 @@ package Calc:
 
   trait ToStringMixin extends Lang[String], Calc_bool.ToStringMixin, Calc_int.ToStringMixin:
     def greaterThan(lhs: Expr, rhs: Expr): Expr = s"($lhs > $rhs)"
-
-  class ToString extends ToStringMixin
-  given ToString()
-
-  trait EvalMixin[T] extends Lang[T], Calc_bool.EvalMixin[T], Calc_int.EvalMixin[T]:
-    def greaterThan(lhs: Expr, rhs: Expr): Expr = fromBool(asInt(lhs) > asInt(rhs))
+  given ToStringMixin()
 
   type Value = Int | Boolean
-
-  class Eval extends EvalMixin[Value], EvalId[Value], EvalIntBool[Value]
-  given Eval()
+  trait EvalMixin[T] extends Lang[T], Calc_bool.EvalMixin[T], Calc_int.EvalMixin[T]:
+    def greaterThan(lhs: Expr, rhs: Expr): Expr = fromBool(asInt(lhs) > asInt(rhs))
+  given EvalMixin[Value] with EvalId[Value] with EvalIntBool[Value] with {}
 
   type MyTest = TestLoc[Value, Lang]
   def testcases: List[MyTest] =

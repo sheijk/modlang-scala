@@ -19,8 +19,7 @@ package Bindings:
     def let(name: String, value: Expr, in: Expr => Expr): Expr =
       s"let $name = $value in ${in(name)}"
 
-  class ToString extends ToStringMixin, EvalId[String]
-  given ToString()
+  given ToStringMixin with EvalId[String] with {}
 
   trait EvalMixin[T] extends Lang[T]:
     type Expr = () => T

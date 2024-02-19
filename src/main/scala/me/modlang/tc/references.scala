@@ -40,9 +40,7 @@ package References:
   trait ToStringMixin extends Lang[String], EvalId[String]:
     def mut(name: String, value: Expr, in: Ref[Expr] => Expr): Expr =
       s"(mut $name = $value :in ${in(new StringRef(name))})"
-
-  class ToString extends ToStringMixin, EvalId[String]
-  given ToString()
+  given ToStringMixin with EvalId[String] with {}
 
   class FnRef[Value](initial: Value) extends Ref[() => Value]:
     type Expr = () => Value

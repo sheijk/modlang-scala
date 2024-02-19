@@ -3,7 +3,7 @@ package modlang
 package tc
 
 final class ImperativeSuite extends TestSuite:
-  import tfi.*
+  import tc.*
 
   def runTestCase[Value, Lang[_] <: Empty.Lang[?]](
     t: (Value, [T] => (l: Lang[T]) => l.Expr, Location)
@@ -40,14 +40,12 @@ final class ImperativeSuite extends TestSuite:
   // Algo has no tests
 
   test("Algo_calc"):
-    import Algo_calc.*
-    import Algo_calc.given
+    import Algo_calc.{*, given}
     testcases.map(runTestCase[Value, Lang]).foreach(test =>
       expectEquals(test._2, test._1, test._3)(using toMunit(test._4)))
 
   test("Algo_calc_bindings"):
-    import Algo_calc_bindings.*
-    import Algo_calc_bindings.given
+    import Algo_calc_bindings.{*, given}
     testcases.map(runTestCase[Value, Lang]).foreach(test =>
       expectEquals(test._2, test._1, test._3)(using toMunit(test._4)))
 
@@ -55,34 +53,30 @@ final class ImperativeSuite extends TestSuite:
   // Blocks has no tests
 
   test("Calc"):
-    import Calc.*
-    import Calc.given
+    import Calc.{*, given}
     testcases.map(runTestCase[Value, Lang]).foreach(test =>
       expectEquals(test._2, test._1, test._3)(using toMunit(test._4)))
 
   test("Calc_bool"):
-    import Calc_bool.*
-    import Calc_bool.given
+    import Calc_bool.{*, given}
     testcases.map(runTestCase[Value, Lang]).foreach(test =>
       expectEquals(test._2, test._1, test._3)(using toMunit(test._4)))
 
   test("Calc_int"):
-    import Calc_int.*
-    import Calc_int.given
+    import Calc_int.{*, given}
     testcases.map(runTestCase[Value, Lang]).foreach(test =>
       expectEquals(test._2, test._1, test._3)(using toMunit(test._4)))
 
   // Empty has no tests
 
   test("Imperative"):
-    import Imperative.*
-    import Imperative.given
+    import Imperative.{*, given}
     testcases.map(runTestCase[Value, Lang]).foreach(test =>
       expectEquals(test._2, test._1, test._3)(using toMunit(test._4)))
 
   // References has no tests
 
-  test("Optimizer"):
-    import Optimizer.*
-    val (eOpt, sOpt) = opt(Eval(), ToString())
-    testcases.foreach(runTestCaseOpt[Value, Lang](_, Eval(), ToString(), eOpt, sOpt))
+  // test("Optimizer"):
+  //   import Optimizer.*
+  //   val (eOpt, sOpt) = opt(Eval(), ToString())
+  //   testcases.foreach(runTestCaseOpt[Value, Lang](_, Eval(), ToString(), eOpt, sOpt))

@@ -24,18 +24,13 @@ package Calc_int:
   trait ToStringMixin extends Lang[String], EvalId[String]:
     def int(v: Int): String = v.toString()
     def plus(lhs: String, rhs: String): String = s"($lhs + $rhs)"
+  given ToStringMixin()
 
-  class ToString extends ToStringMixin
-  given ToString()
-
+  type Value = Int
   trait EvalMixin[T] extends Lang[T], EvalHasInt[T]:
     def int(v: Int): Expr = fromInt(v)
     def plus(lhs: Expr, rhs: Expr): Expr = fromInt(asInt(lhs) + asInt(rhs))
-
-  type Value = Int
-
-  class Eval extends EvalMixin[Value], EvalId[Value], EvalInt
-  given Eval()
+  given EvalMixin[Value] with EvalId[Value] with EvalInt with {}
 
   def testcases =
     import CaptureLocation.f

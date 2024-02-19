@@ -17,9 +17,7 @@ package Blocks:
   trait ToStringMixin extends Lang[String], EvalId[String]:
     def block(statements: String*): Expr =
       "{" + statements.mkString("; ") + "}"
-
-  class ToString extends ToStringMixin, EvalId[String]
-  given ToString()
+  given ToStringMixin with EvalId[String] with {}
 
   trait EvalMixin[T] extends Lang[T], EvalFn[T]:
     def block(statements: Expr*): Expr =
