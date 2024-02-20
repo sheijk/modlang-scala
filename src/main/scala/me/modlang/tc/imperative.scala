@@ -39,7 +39,6 @@ package Imperative:
         import l.*
         mut("foo", int(1), foo =>
         block(
-          foo.set(int(666)),
           foo.set(plus(foo.get(), int(10))),
           foo.get()
         ))),
@@ -52,7 +51,7 @@ package Imperative:
           if_(greaterThan(idx.get(), int(10)),
             break(l, sum.get()),
             block(
+              sum.set(plus(sum.get(), idx.get())),
               idx.set(plus(idx.get(), int(1))),
-              sum.set(plus(sum.get(), idx.get()))
               )))))),
     )
