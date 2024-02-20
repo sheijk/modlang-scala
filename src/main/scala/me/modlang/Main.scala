@@ -30,7 +30,7 @@ def andreMode() =
   demo()(using AdtAst())
   demo()(using UnionAst())
   andreMode()
-  typeclass.demo()
   tfi.demo()
+  typeclass.demo()
 
   println("─" * 100)
