@@ -35,9 +35,8 @@ def demo() =
   val simple = [T] => (l: Calc_bool.Lang[T]) => l.and(l.bool(true), l.bool(true))
   val calc: Calc.Program = [T] =>
     (l: Calc.Lang[T]) => l.greaterThan(l.int(10), l.plus(l.int(5), l.int(4)))
-  given Calc.ToString()
-  runProgram[Boolean, Calc_bool.Lang](simple)(using e = Calc_bool.Eval())
-  given Calc.Eval()
+  import Calc.given
+  runProgram[Boolean, Calc_bool.Lang](simple)(using e = Calc_bool.eval)
   runProgram[Calc.Value, Calc.Lang](simple.asInstanceOf[Calc.Program])
   runProgram[Calc.Value, Calc.Lang](calc)
   imperativeDemo()
@@ -55,6 +54,5 @@ def imperativeDemo() =
             idx.set(plus(idx.get(), int(1))),
             sum.set(plus(sum.get(), idx.get()))
             )))))
-  given Imperative.ToString()
-  given Imperative.Eval()
+  import Imperative.given
   runProgram[Imperative.Value, Imperative.Lang](program)

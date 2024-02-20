@@ -16,14 +16,11 @@ package Algo_calc:
     Calc.Dup[T, L]
 
   trait ToStringMixin extends Lang[String], Algo.ToStringMixin, Calc.ToStringMixin
-  class ToString extends ToStringMixin
-  given ToString()
-
-  trait EvalMixin[T] extends Lang[T] , Calc.EvalMixin[T] , Algo.EvalMixin[T]
+  given ToStringMixin()
 
   type Value = Calc.Value
-  class Eval extends EvalMixin[Value], EvalFnIntBool[Value]
-  given Eval()
+  trait EvalMixin[T] extends Lang[T] , Calc.EvalMixin[T] , Algo.EvalMixin[T]
+  given EvalMixin[Value] with EvalIntBool[Value] with {}
 
   def testcases =
     import CaptureLocation.f

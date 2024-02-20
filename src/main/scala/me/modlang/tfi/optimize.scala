@@ -80,7 +80,7 @@ package Optimizer:
   type Value = Imperative.Value
 
   class ToString extends Lang[String], Imperative.ToStringMixin, Dummy.ToStringMixin
-  trait EvalMixin extends Lang[Value], Imperative.EvalMixin[Value], Dummy.EvalMixin[Value], EvalFn[Value], EvalFnIntBool[Value]
+  trait EvalMixin extends Lang[Value], Imperative.EvalMixin[Value], Dummy.EvalMixin[Value], EvalFn[Value], EvalIntBool[Value]
   class Eval extends EvalMixin
 
   transparent trait ConstantFoldMixin[T, Inner <: Lang[T]] extends

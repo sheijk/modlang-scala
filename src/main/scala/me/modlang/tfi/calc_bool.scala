@@ -25,18 +25,14 @@ package Calc_bool:
 
     def bool(v: Boolean): String = v.toString()
     def and(lhs: String, rhs: String): String = s"($lhs & $rhs)"
-
-  class ToString extends ToStringMixin
-  given ToString()
-
-  trait EvalMixin[T] extends Lang[T], EvalHasBool[T]:
-    def bool(v: Boolean): Expr = fromBool(v)
-    def and(lhs: Expr, rhs: Expr): Expr = fromBool(asBool(lhs) & asBool(rhs))
+  given ToStringMixin with {}
 
   type Value = Boolean
-
-  class Eval extends EvalMixin[Value], EvalId[Value], EvalBool
-  given Eval()
+  trait EvalMixin[T] extends Lang[T], EvalHasBool[T], EvalFn[T]:
+    def bool(v: Boolean): Expr = () => fromBool(v)
+    def and(lhs: Expr, rhs: Expr): Expr =
+      () => fromBool(asBool(lhs()) & asBool(rhs()))
+  given eval: Lang[Value] = new EvalMixin[Value] with EvalBool[Value]
 
   def testcases =
     import CaptureLocation.f

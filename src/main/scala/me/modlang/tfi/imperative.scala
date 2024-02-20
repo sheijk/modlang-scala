@@ -10,14 +10,11 @@ package Imperative:
   trait Dup[T, L <: Lang[T]] extends Lang[T], References.Dup[T, L] , Algo_calc_bindings.Dup[T, L], Blocks.Dup[T, L]
 
   trait ToStringMixin extends Lang[String], Algo_calc_bindings.ToStringMixin, References.ToStringMixin, Blocks.ToStringMixin
-  class ToString extends ToStringMixin
-  given ToString()
-
-  trait EvalMixin[T] extends Lang[T], References.EvalMixin[T] , Algo_calc_bindings.EvalMixin[T], Blocks.EvalMixin[T]
+  given ToStringMixin()
 
   type Value = Algo_calc_bindings.Value
-  class Eval extends EvalMixin[Value], EvalFnIntBool[Value]
-  given Eval()
+  trait EvalMixin[T] extends Lang[T], References.EvalMixin[T] , Algo_calc_bindings.EvalMixin[T], Blocks.EvalMixin[T]
+  given EvalMixin[Value] with EvalIntBool[Value] with {}
 
   def testcases =
     import CaptureLocation.f
@@ -42,7 +39,6 @@ package Imperative:
         import l.*
         mut("foo", int(1), foo =>
         block(
-          foo.set(int(666)),
           foo.set(plus(foo.get(), int(10))),
           foo.get()
         ))),
@@ -55,7 +51,7 @@ package Imperative:
           if_(greaterThan(idx.get(), int(10)),
             break(l, sum.get()),
             block(
+              sum.set(plus(sum.get(), idx.get())),
               idx.set(plus(idx.get(), int(1))),
-              sum.set(plus(sum.get(), idx.get()))
               )))))),
     )
