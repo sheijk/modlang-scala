@@ -2,40 +2,30 @@ package me
 package modlang
 package typeclass
 
-trait Expr[Value]:
-  def show(): String = this.toString()
-  def eval(): Value
+package base:
+  trait Show[T]:
+    type E = T
+    def show(e: T): String
 
-trait Show:
-  def show(e: Expr[?]): String = e.show()
+  def show[T: Show](t: T): String = summon[Show[T]].show(t)
+  def printSource[T : Show](t: T) =
+    val src: String = show(t)
+    println(s"  source($t) = $src")
 
-trait Eval[Value]:
-  def eval(e: Expr[Value]): Value = e.eval()
+  case class Lit[Value](value: Value)
 
-def run(e: Expr[Int]) =
-  val src = e.show()
-  val r = e.eval()
-  println(s"  $src => $r")
+  given showLit[T] : Show[Lit[T]] with
+    def show(t: Lit[T]) = t.value.toString()
 
-case class Lit[Value](value: Value) extends Expr[Value]:
-  def eval() = value
+  case class Add[E](lhs: E, rhs: E)
+  given showAdd[E](using s: Show[E]) : Show[Add[E]] with
+    def show(t: Add[E]) = s"${s.show(t.lhs)} + ${s.show(t.rhs)}"
 
-trait BinOp[Value](f: (Value, Value) => Value)(lhs: Expr[Value], rhs: Expr[Value]) extends Expr[Value]:
-  def eval() = f(lhs.eval(), rhs.eval())
-
-case class Add(lhs: Expr[Int], rhs: Expr[Int]) extends BinOp[Int]((x: Int, y: Int) => x + y)(lhs, rhs)
-
-def baseDemo() =
-  run(Add(Lit(1), Lit(2)))
-
-case class Neg(e: Expr[Int]) extends Expr[Int]:
-  def eval(): Int = -e.eval()
-
-def newTypeDemo() =
-  run(Add(Neg(Lit(10)), Lit(5)))
+  def demo() =
+    printSource(Lit(10))
+    printSource(Add(Lit(1), Lit(2)))
 
 def demo() =
   println("Type classes")
-  baseDemo()
-  newTypeDemo()
+  base.demo()
 
