@@ -12,8 +12,9 @@ package Calc:
 
   type Value = Int | Boolean
   trait EvalMixin[T] extends Lang[T], Calc_bool.EvalMixin[T], Calc_int.EvalMixin[T]:
-    def greaterThan(lhs: Expr, rhs: Expr): Expr = fromBool(asInt(lhs) > asInt(rhs))
-  given EvalMixin[Value] with EvalId[Value] with EvalIntBool[Value] with {}
+    def greaterThan(lhs: Expr, rhs: Expr): Expr =
+      () => fromBool(asInt(lhs()) > asInt(rhs()))
+  given EvalMixin[Value] with EvalIntBool[Value] with {}
 
   type MyTest = TestLoc[Value, Lang]
   def testcases: List[MyTest] =

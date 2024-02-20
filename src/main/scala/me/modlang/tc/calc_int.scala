@@ -13,10 +13,11 @@ package Calc_int:
   given ToStringMixin()
 
   type Value = Int
-  trait EvalMixin[T] extends Lang[T], EvalHasInt[T]:
-    def int(v: Int): Expr = fromInt(v)
-    def plus(lhs: Expr, rhs: Expr): Expr = fromInt(asInt(lhs) + asInt(rhs))
-  given EvalMixin[Value] with EvalId[Value] with EvalInt with {}
+  trait EvalMixin[T] extends Lang[T], EvalHasInt[T], EvalFn[T]:
+    def int(v: Int): Expr = () => fromInt(v)
+    def plus(lhs: Expr, rhs: Expr): Expr =
+      () => fromInt(asInt(lhs()) + asInt(rhs()))
+  given EvalMixin[Value] with EvalInt[Value] with {}
 
   def testcases =
     import CaptureLocation.f

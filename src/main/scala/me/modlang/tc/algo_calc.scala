@@ -10,7 +10,7 @@ package Algo_calc:
 
   type Value = Calc.Value
   trait EvalMixin[T] extends Lang[T] , Calc.EvalMixin[T] , Algo.EvalMixin[T]
-  given EvalMixin[Value] with EvalFnIntBool[Value] with {}
+  given EvalMixin[Value] with EvalIntBool[Value] with {}
 
   def testcases =
     import CaptureLocation.f

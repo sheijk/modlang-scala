@@ -10,7 +10,7 @@ package Imperative:
 
   type Value = Algo_calc_bindings.Value
   trait EvalMixin[T] extends Lang[T], References.EvalMixin[T] , Algo_calc_bindings.EvalMixin[T], Blocks.EvalMixin[T]
-  given EvalMixin[Value] with EvalFnIntBool[Value] with {}
+  given EvalMixin[Value] with EvalIntBool[Value] with {}
 
   def testcases =
     import CaptureLocation.f

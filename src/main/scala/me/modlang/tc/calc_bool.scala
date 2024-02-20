@@ -15,10 +15,11 @@ package Calc_bool:
   given ToStringMixin with {}
 
   type Value = Boolean
-  trait EvalMixin[T] extends Lang[T], EvalHasBool[T]:
-    def bool(v: Boolean): Expr = fromBool(v)
-    def and(lhs: Expr, rhs: Expr): Expr = fromBool(asBool(lhs) & asBool(rhs))
-  given EvalMixin[Value] with EvalId[Value] with EvalBool with {}
+  trait EvalMixin[T] extends Lang[T], EvalHasBool[T], EvalFn[T]:
+    def bool(v: Boolean): Expr = () => fromBool(v)
+    def and(lhs: Expr, rhs: Expr): Expr =
+      () => fromBool(asBool(lhs()) & asBool(rhs()))
+  given EvalMixin[Value] with EvalBool[Value] with {}
 
   def testcases =
     import CaptureLocation.f

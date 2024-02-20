@@ -23,10 +23,9 @@ package Algo:
 
   case class LoopBreak[Value](name: String, value: Value) extends Exception
 
-  trait EvalMixin[T] extends Lang[T], EvalHasBool[T]:
-    type Expr = () => T
+  trait EvalMixin[T] extends Lang[T], EvalHasBool[T], EvalFn[T]:
     def if_(cond: () => T, onTrue: Expr, onFalse: Expr): Expr =
-      () => if asBool(cond) then onTrue() else onFalse()
+      () => if asBool(cond()) then onTrue() else onFalse()
     type Loop = String
     def loop(name: String, body: String => Expr): Expr =
       () =>
@@ -35,6 +34,7 @@ package Algo:
             val _ = body(name)()
           throw Error("Quit loop")
         catch case e: LoopBreak[T] =>
+          assert(e.name == name)
           e._2
     def break(loop: Loop, ret: Expr): Expr =
       () =>
