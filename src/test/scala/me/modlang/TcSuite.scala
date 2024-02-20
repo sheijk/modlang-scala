@@ -76,7 +76,7 @@ final class ImperativeSuite extends TestSuite:
 
   // References has no tests
 
-  // test("Optimizer"):
-  //   import Optimizer.*
-  //   val (eOpt, sOpt) = opt(Eval(), ToString())
-  //   testcases.foreach(runTestCaseOpt[Value, Lang](_, Eval(), ToString(), eOpt, sOpt))
+  test("Optimizer"):
+    import Optimizer.*
+    val (eOpt, sOpt) = opt(Eval(), ToString())
+    testcases.foreach(runTestCaseOpt[Value, Lang](_, Eval(), ToString(), eOpt, sOpt))

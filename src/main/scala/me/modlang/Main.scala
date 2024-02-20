@@ -30,9 +30,9 @@ def andreMode() =
   demo()(using AdtAst())
   demo()(using UnionAst())
   andreMode()
+  expression_problem.demo()
   typeclass.demo()
   tfi.demo()
-  expression_problem.demo()
   tc.demo()
 
   println("─" * 100)
