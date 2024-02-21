@@ -73,7 +73,7 @@ package both:
 package opt:
   import base.{*, given}
   import neg.{*, given}
-  // import eval.{*, given}
+  import eval.{*, given}
 
   trait Wrap[T, W[_]]:
     type Out
@@ -99,15 +99,18 @@ package opt:
   given toOptim[T] : Wrap1[T, Optim] with
     def wrap1(t: T): Optim[T] = Optim(t)
 
-  case class Expr[T](t: T)
-  given toExpr[T] : Wrap1[T, Expr] with
-    def wrap1(t: T): Expr[T] = Expr(t)
+  case class Expr[T](t: T, e : Eval[Int, T]):
+    def eval(): Int = e.eval(t)
+
+  given toExpr[T](using e: Eval[Int, T]) : Wrap1[T, Expr] with
+    def wrap1(t: T): Expr[T] = Expr(t, e)
 
   def demo() =
     println("  optimize")
-    def opt[E](e: E)(using Wrap[E, Optim]): Unit =
-      val opt = wrap(e)
-      println(s"  $e => $opt")
+    def opt[E](e: E)(using Wrap[E, Expr]): Unit =
+      // val opt = wrap(e)
+      val ex = wrap(e)
+      println(s"  $e => $ex")
     opt(Lit(10))
     opt(Add(Lit(1), Lit(2)))
     // opt(Neg(Lit(10)))
