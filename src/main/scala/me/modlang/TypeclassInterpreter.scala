@@ -16,9 +16,9 @@ package base:
   given showLit[T] : Show[Lit[T]] with
     def show(t: Lit[T]) = t.value.toString()
 
-  case class Add[E](lhs: E, rhs: E)
-  given showAdd[E](using s: Show[E]) : Show[Add[E]] with
-    def show(t: Add[E]) = s"${s.show(t.lhs)} + ${s.show(t.rhs)}"
+  case class Add[L, R](lhs: L, rhs: R)
+  given showAdd[L, R](using sl: Show[L])(using sr: Show[R]) : Show[Add[L, R]] with
+    def show(t: Add[L, R]) = s"${sl.show(t.lhs)} + ${sr.show(t.rhs)}"
 
   def demo() =
     printSource(Lit(10))
@@ -34,8 +34,8 @@ package eval:
     type Value = T
     def eval(t: Lit[T]): T = t.value
 
-  given evalAdd[E](using e: Eval[Int, E]) : Eval[Int, Add[E]] with
-    def eval(t: Add[E]): Int = e.eval(t.lhs) + e.eval(t.rhs)
+  given evalAdd[L, R](using el: Eval[Int, L])(using er : Eval[Int, R]) : Eval[Int, Add[L, R]] with
+    def eval(t: Add[L, R]): Int = el.eval(t.lhs) + er.eval(t.rhs)
 
   def run[T](e: T)(using eval : Eval[Int, T])(using show: Show[T]) =
     val src = show.show(e)
@@ -46,8 +46,21 @@ package eval:
     run(Lit(10))
     run(Add(Lit(1), Lit(2)))
 
+package neg:
+  import base.{*, given}
+
+  case class Neg[E](e: E)
+
+  given showNeg[E](using s: Show[E]) : Show[Neg[E]] with
+    def show(e: Neg[E]): String = "-" + s.show(e.e)
+
+  def demo() =
+    printSource(Neg(Lit(10)))
+    printSource(Neg(Add(Neg(Lit(1)), Lit(2))))
+
 def demo() =
   println("Type classes")
   base.demo()
   eval.demo()
+  neg.demo()
 
