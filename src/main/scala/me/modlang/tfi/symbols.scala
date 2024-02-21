@@ -56,16 +56,20 @@ package Algo_calc:
 type Ast[L[_] <: Empty.Lang[?]] = [T] => (l: L[T]) => l.Expr
 
 package Scope:
-  class Scope:
+  class Scope(parent: Option[Scope]):
     var table = Map[String, Any]()
     def lookup(id: String): Option[Any] =
-      table get id
+      // table.get(id).orElse(parent.map(_.lookup(id)))
+      table get id match
+        case Some(x) => Some(x)
+        case None => parent.flatMap(_.lookup(id))
     def register(id: String, obj: Any): Unit =
       table = table + (id -> obj)
 
   trait Lang[T] extends Empty.Lang[T]:
     def let(name: String, value: Expr, body: Expr): Expr
     def get(name: String): Expr
+    def newScope(e: Expr): Expr
 
   trait ToStringMixin extends Lang[String]:
     type Expr = Result
@@ -73,23 +77,28 @@ package Scope:
       s"(let $name = $value in $body)"
     def get(name: String): Expr =
       s"get($name)"
+    def newScope(e: Expr): Expr =
+      s"{ $e }"
   given ToStringMixin with EvalId[String] with {}
 
   trait EvalMixin[T] extends Lang[T], EvalHasBool[T], EvalFn[T]:
-    var topScope = Scope()
+    var topScope = Scope(None)
     def let(name: String, value: Expr, body: Expr): Expr =
-      () =>
-        val prevScope = topScope
-        topScope = Scope()
+      newScope(() =>
         topScope.register(name, value())
-        val bodyResult = body()
-        topScope = prevScope
-        bodyResult
+        body())
     def get(name: String): Expr =
       () =>
         topScope.lookup(name) match
           case Some(v) => v.asInstanceOf[T]
           case _ => throw Error(s"could not find variable $name")
+    def newScope(e: Expr): Expr =
+      () =>
+        val prevScope = topScope
+        topScope = Scope(Some(prevScope))
+        val result = e()
+        topScope = prevScope
+        result
 
   trait PushDown[T, Payload, L <: Lang[T]] extends
       Lang[Payload => T],
@@ -98,6 +107,8 @@ package Scope:
       ctx => l.let(name, value(ctx), body(ctx))
     def get(name: String): Expr =
       ctx => l.get(name)
+    def newScope(e: Expr): Expr =
+      ctx => l.newScope(e(ctx))
   given pushDown[T, Payload](using l2: Lang[T]) : PushDown[T, Payload, Lang[T]] with {}
 
 package Scoped_algo:
@@ -133,6 +144,18 @@ package Scoped_algo:
       [T] => (l: Lang[T]) =>
         import l.*
         let("foo", int(10), plus(int(1), get("foo")))),
+      f(11,
+      [T] => (l: Lang[T]) =>
+        import l.*
+        let("foo", int(10),
+        let("bar", int(20),
+        plus(int(1), get("foo"))))),
+      f(21,
+      [T] => (l: Lang[T]) =>
+        import l.*
+        let("foo", int(10),
+        let("bar", int(20),
+        plus(int(1), get("bar"))))),
     )
 
 package Symbols:
