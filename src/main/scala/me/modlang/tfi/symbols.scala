@@ -15,16 +15,14 @@ package Calc_bool:
     def and(lhs: Expr, rhs: Expr): Expr =
       ctx =>
         l.and(lhs(ctx), rhs(ctx))
-        l.and(lhs(ctx), rhs(ctx))
 
-    // def eval(e: Expr): Result = l.eval(e(l)(Payload(0)))
-    def eval(e: Expr): Payload => Result =
-      val x: l.Expr = e(Payload(0))
-      val r: T = l.eval(x)
-      r
+    def eval(e: Expr): Result =
+      ctx =>
+        val x: l.Expr = e(ctx)
+        val r: T = l.eval(x)
+        r
 
-    // l.eval(e(Payload(0)))
-  given pushDown[T](using l: Lang[T]) : PushDown[T](l) with {}
+  given pushDown[T](using l2: Lang[T]) : PushDown[T](l2) with {}
 
 // package Imperative:
 //   trait PushDown[T](val next: Lang[T]) extends Lang[Payload => T], Empty.PushDown[T, Payload]:
@@ -63,9 +61,9 @@ package Symbols:
 
     // import CaptureLocation.f
     type Ast = [T] => (l: Lang[T]) => l.Expr
-    val ast = [T] => (l: Lang[T]) => l.bool(true)
+    val ast = [T] => (l: Lang[T]) => l.and(l.bool(true), l.bool(false))
     // runProgram[Boolean, Lang](ast)
     def run[T](ast: Ast)(using l : Lang[T]) = l.eval(ast(l))
     val src: String = run(ast)
     val r: Payload => Boolean = run(ast)
-    println(s"$src => $r")
+    println(s"  $src => ${r(Payload(0))}")
