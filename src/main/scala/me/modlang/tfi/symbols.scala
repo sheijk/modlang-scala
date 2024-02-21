@@ -91,6 +91,15 @@ package Scope:
           case Some(v) => v.asInstanceOf[T]
           case _ => throw Error(s"could not find variable $name")
 
+  trait PushDown[T, Payload, L <: Lang[T]] extends
+      Lang[Payload => T],
+      Empty.PushDown[T, Payload, L]:
+    def let(name: String, value: Expr, body: Expr): Expr =
+      ctx => l.let(name, value(ctx), body(ctx))
+    def get(name: String): Expr =
+      ctx => l.get(name)
+  given pushDown[T, Payload](using l2: Lang[T]) : PushDown[T, Payload, Lang[T]] with {}
+
 package Scoped_algo:
   trait Lang[T] extends Algo_calc.Lang[T], Scope.Lang[T]
 
@@ -113,11 +122,8 @@ package Scoped_algo:
 
   trait PushDown[T, Payload, L <: Lang[T]] extends
       Lang[Payload => T],
-      Algo_calc.PushDown[T, Payload, L]:
-    def let(name: String, value: Expr, body: Expr): Expr =
-      ctx => l.let(name, value(ctx), body(ctx))
-    def get(name: String): Expr =
-      ctx => l.get(name)
+      Algo_calc.PushDown[T, Payload, L],
+      Scope.PushDown[T, Payload, L]
   given pushDown[T, Payload](using l2: Lang[T]) : PushDown[T, Payload, Lang[T]] with {}
 
   def testcases =
