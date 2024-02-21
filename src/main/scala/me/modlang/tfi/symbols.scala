@@ -3,26 +3,24 @@ package modlang
 package tfi
 
 package Empty:
-  trait PushDown[T, Payload] extends Lang[Payload => T]
-
-package Calc_bool:
-  case class Payload(value: Int)
-  trait PushDown[T](val next: Lang[T]) extends Lang[Payload => T], Empty.PushDown[T, Payload]:
+  trait PushDown[T, Payload, L <: Lang[T]](using val next: L) extends Lang[Payload => T]:
     val l = next
     type Expr = Payload => l.Expr
 
-    def bool(value: Boolean) : Payload => l.Expr = ctx => l.bool(value)
+    def eval(e: Expr): Result =
+      (ctx: Payload) => l.eval(e(ctx))
+
+package Calc_bool:
+  case class Payload(value: Int)
+  trait PushDown[T] extends Lang[Payload => T], Empty.PushDown[T, Payload, Lang[T]]:
+    def bool(value: Boolean) : Payload => l.Expr =
+      ctx => l.bool(value)
+
     def and(lhs: Expr, rhs: Expr): Expr =
       ctx =>
         l.and(lhs(ctx), rhs(ctx))
 
-    def eval(e: Expr): Result =
-      ctx =>
-        val x: l.Expr = e(ctx)
-        val r: T = l.eval(x)
-        r
-
-  given pushDown[T](using l2: Lang[T]) : PushDown[T](l2) with {}
+  given pushDown[T](using l2: Lang[T]) : PushDown[T] with {}
 
 // package Imperative:
 //   trait PushDown[T](val next: Lang[T]) extends Lang[Payload => T], Empty.PushDown[T, Payload]:
