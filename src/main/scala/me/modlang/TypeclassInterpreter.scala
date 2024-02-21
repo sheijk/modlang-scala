@@ -83,21 +83,25 @@ package opt:
   trait Wrap1[T, W[_]]:
     def wrap1(t: T): W[T]
 
-  case class Optim[T](t: T)
-  given toOptim[T] : Wrap1[T, Optim] with
-    def wrap1(t: T): Optim[T] = Optim(t)
-
-  given optimLit[T](using w1: Wrap1[Lit[T], Optim]) : Wrap[Lit[T], Optim] with
+  given optimLit[T, Optim[_]](using w1: Wrap1[Lit[T], Optim]) : Wrap[Lit[T], Optim] with
     type Out = Lit[T]
     def wrap(e: Lit[T]): Optim[Lit[T]] = w1.wrap1(e)
 
-  given optimAdd[L, R]
+  given optimAdd[L, R, Optim[_]]
       (using wl : Wrap[L, Optim], wr: Wrap[R, Optim])
       (using w1: Wrap1[Add[Optim[wl.Out], Optim[wr.Out]], Optim])
       : Wrap[Add[L, R], Optim] with
     type Out = Add[Optim[wl.Out], Optim[wr.Out]]
     def wrap(e: Add[L, R]): Optim[Add[Optim[wl.Out], Optim[wr.Out]]] =
       w1.wrap1(Add(wl.wrap(e.lhs), wr.wrap(e.rhs)))
+
+  case class Optim[T](t: T)
+  given toOptim[T] : Wrap1[T, Optim] with
+    def wrap1(t: T): Optim[T] = Optim(t)
+
+  case class Expr[T](t: T)
+  given toExpr[T] : Wrap1[T, Expr] with
+    def wrap1(t: T): Expr[T] = Expr(t)
 
   def demo() =
     println("  optimize")
