@@ -18,7 +18,7 @@ package base:
 
   case class Add[L, R](lhs: L, rhs: R)
   given showAdd[L, R](using sl: Show[L])(using sr: Show[R]) : Show[Add[L, R]] with
-    def show(t: Add[L, R]) = s"${sl.show(t.lhs)} + ${sr.show(t.rhs)}"
+    def show(t: Add[L, R]) = s"(${sl.show(t.lhs)} + ${sr.show(t.rhs)})"
 
   def demo() =
     printSource(Lit(10))
@@ -58,9 +58,22 @@ package neg:
     printSource(Neg(Lit(10)))
     printSource(Neg(Add(Neg(Lit(1)), Lit(2))))
 
+package both:
+  import base.{*, given}
+  import neg.{*, given}
+  import eval.{*, given}
+
+  given evalNeg[E](using ev: Eval[Int, E]) : Eval[Int, Neg[E]] with
+    def eval(e: Neg[E]): Int = -ev.eval(e.e)
+
+  def demo() =
+    run(Neg(Lit(10)))
+    run(Neg(Add(Neg(Lit(1)), Lit(2))))
+
 def demo() =
   println("Type classes")
   base.demo()
   eval.demo()
   neg.demo()
+  both.demo()
 
