@@ -83,34 +83,33 @@ package opt:
   trait Wrap1[T, W[_]]:
     def wrap1(t: T): W[T]
 
-  given optimLit[T, Optim[_]](using w1: Wrap1[Lit[T], Optim]) : Wrap[Lit[T], Optim] with
-    type Out = Lit[T]
-    def wrap(e: Lit[T]): Optim[Lit[T]] = w1.wrap1(e)
+  given optimLit(using ev: Eval[Int, Lit[Int]]) : Wrap[Lit[Int], Expr] with
+    type Out = Lit[Int]
+    def wrap(ex: Lit[Int]): Expr[Lit[Int]] = Expr(ex, ev)
 
-  given optimAdd[L, R, Optim[_]]
-      (using wl : Wrap[L, Optim], wr: Wrap[R, Optim])
-      (using w1: Wrap1[Add[Optim[wl.Out], Optim[wr.Out]], Optim])
-      : Wrap[Add[L, R], Optim] with
-    type Out = Add[Optim[wl.Out], Optim[wr.Out]]
-    def wrap(e: Add[L, R]): Optim[Add[Optim[wl.Out], Optim[wr.Out]]] =
-      w1.wrap1(Add(wl.wrap(e.lhs), wr.wrap(e.rhs)))
+  given optimAdd[L, R]
+      (using ev: Eval[Int, Add[Expr[L], Expr[R]]])
+      (using evl: Eval[Int, L])
+      (using evr: Eval[Int, R])
+      : Wrap[Add[L, R], Expr] with
+    type Out = Add[Expr[L], Expr[R]]
+    def wrap(e: Add[L, R]): Expr[Add[Expr[L], Expr[R]]] =
+      Expr(Add(Expr(e.lhs, evl), Expr(e.rhs, evr)), ev)
 
-  case class Optim[T](t: T)
-  given toOptim[T] : Wrap1[T, Optim] with
-    def wrap1(t: T): Optim[T] = Optim(t)
+  case class Expr[E](ex: E, ev : Eval[Int, E]):
+    def eval(): Int = ev.eval(ex)
+    override def toString(): String = "e" + ex.toString()
 
-  case class Expr[T](t: T, e : Eval[Int, T]):
-    def eval(): Int = e.eval(t)
-
-  given toExpr[T](using e: Eval[Int, T]) : Wrap1[T, Expr] with
-    def wrap1(t: T): Expr[T] = Expr(t, e)
+  given evalExpr[E](using ev: Eval[Int, E]) : Eval[Int, Expr[E]] with
+    def eval(e: Expr[E]): Int = e.eval()
+    override def toString(): String = "???"
 
   def demo() =
     println("  optimize")
     def opt[E](e: E)(using Wrap[E, Expr]): Unit =
-      // val opt = wrap(e)
       val ex = wrap(e)
-      println(s"  $e => $ex")
+      val r = ex.eval()
+      println(s"  opt($e) = $ex => $r")
     opt(Lit(10))
     opt(Add(Lit(1), Lit(2)))
     // opt(Neg(Lit(10)))
