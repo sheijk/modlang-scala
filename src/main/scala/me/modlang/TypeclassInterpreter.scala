@@ -80,23 +80,26 @@ package opt:
     def wrap(t: T): W[Out]
   def wrap[T, W[_]](t: T)(using w : Wrap[T, W]): W[w.Out] = w.wrap(t)
 
+
+  // Maybe this can be made generic using context parameters?
+  // https://docs.scala-lang.org/scala3/reference/other-new-features/trait-parameters.html
   trait Wrap1[T, W[_]]:
     def wrap1(t: T): W[T]
 
   given optimLit(using ev: Eval[Int, Lit[Int]]) : Wrap[Lit[Int], Expr] with
     type Out = Lit[Int]
-    def wrap(ex: Lit[Int]): Expr[Lit[Int]] = Expr(ex, ev)
+    def wrap(ex: Lit[Int]): Expr[Lit[Int]] = Expr(ex)
 
   given optimAdd[L, R]
-      (using ev: Eval[Int, Add[Expr[L], Expr[R]]])
-      (using evl: Eval[Int, L])
-      (using evr: Eval[Int, R])
+      (using Eval[Int, Add[Expr[L], Expr[R]]])
+      (using Eval[Int, L])
+      (using Eval[Int, R])
       : Wrap[Add[L, R], Expr] with
     type Out = Add[Expr[L], Expr[R]]
     def wrap(e: Add[L, R]): Expr[Add[Expr[L], Expr[R]]] =
-      Expr(Add(Expr(e.lhs, evl), Expr(e.rhs, evr)), ev)
+      Expr(Add(Expr(e.lhs), Expr(e.rhs)))
 
-  case class Expr[E](ex: E, ev : Eval[Int, E]):
+  case class Expr[E](ex: E)(using val ev : Eval[Int, E]):
     def eval(): Int = ev.eval(ex)
     override def toString(): String = "e" + ex.toString()
 
