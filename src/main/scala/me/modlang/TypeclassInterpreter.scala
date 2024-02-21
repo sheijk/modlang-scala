@@ -70,10 +70,42 @@ package both:
     run(Neg(Lit(10)))
     run(Neg(Add(Neg(Lit(1)), Lit(2))))
 
+package opt:
+  import base.{*, given}
+  import neg.{*, given}
+  // import eval.{*, given}
+
+  trait Wrap[T, W[_]]:
+    type Out
+    def wrap(t: T): W[Out]
+  def wrap[T, W[_]](t: T)(using w : Wrap[T, W]): W[w.Out] = w.wrap(t)
+
+  case class Optim[T](t: T)
+  // given optimAny[T] : Wrap[T, Optim] = t => Optim(t)
+  given optimLit[T] : Wrap[Lit[T], Optim] with
+    type Out = Lit[T]
+    def wrap(e: Lit[T]): Optim[Out] = Optim(e)
+
+  given optimAdd[L, R](using wl : Wrap[L, Optim], wr: Wrap[R, Optim]) : Wrap[Add[L, R], Optim] with
+    type Out = Add[Optim[wl.Out], Optim[wr.Out]]
+    def wrap(e: Add[L, R]): Optim[Add[Optim[wl.Out], Optim[wr.Out]]] =
+      Optim(Add(wl.wrap(e.lhs), wr.wrap(e.rhs)))
+
+  def demo() =
+    println("  optimize")
+    def opt[E](e: E)(using Wrap[E, Optim]): Unit =
+      val opt = wrap(e)
+      println(s"  $e => $opt")
+    opt(Lit(10))
+    // opt(Add(Lit(1), Lit(2)))
+    // opt(Neg(Lit(10)))
+    // opt(Neg(Add(Neg(Lit(1)), Lit(2))))
+
 def demo() =
   println("Type classes")
   base.demo()
   eval.demo()
   neg.demo()
   both.demo()
+  opt.demo()
 
