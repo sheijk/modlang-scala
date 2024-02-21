@@ -32,5 +32,6 @@ def andreMode() =
   andreMode()
   typeclass.demo()
   tfi.demo()
+  macro_compiler.demo()
 
   println("─" * 100)
