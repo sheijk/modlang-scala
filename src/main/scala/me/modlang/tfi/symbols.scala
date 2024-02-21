@@ -11,8 +11,7 @@ package Empty:
       (ctx: Payload) => l.eval(e(ctx))
 
 package Calc_bool:
-  case class Payload(value: Int)
-  trait PushDown[T] extends Lang[Payload => T], Empty.PushDown[T, Payload, Lang[T]]:
+  trait PushDown[T, Payload] extends Lang[Payload => T], Empty.PushDown[T, Payload, Lang[T]]:
     def bool(value: Boolean) : Payload => l.Expr =
       ctx => l.bool(value)
 
@@ -20,7 +19,7 @@ package Calc_bool:
       ctx =>
         l.and(lhs(ctx), rhs(ctx))
 
-  given pushDown[T](using l2: Lang[T]) : PushDown[T] with {}
+  given pushDown[T, Payload](using l2: Lang[T]) : PushDown[T, Payload] with {}
 
 // package Imperative:
 //   trait PushDown[T](val next: Lang[T]) extends Lang[Payload => T], Empty.PushDown[T, Payload]:
@@ -60,8 +59,11 @@ package Symbols:
     // import CaptureLocation.f
     type Ast = [T] => (l: Lang[T]) => l.Expr
     val ast = [T] => (l: Lang[T]) => l.and(l.bool(true), l.bool(false))
-    // runProgram[Boolean, Lang](ast)
     def run[T](ast: Ast)(using l : Lang[T]) = l.eval(ast(l))
     val src: String = run(ast)
-    val r: Payload => Boolean = run(ast)
-    println(s"  $src => ${r(Payload(0))}")
+    // case class Ctx(value: Int)
+    // val ctx: Ctx = Ctx(1)
+    type Ctx = Unit
+    val ctx: Ctx = ()
+    val r: Ctx => Boolean = run(ast)
+    println(s"  $src => ${r(ctx)}")
