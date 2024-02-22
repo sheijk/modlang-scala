@@ -60,8 +60,10 @@ trait SymbolTable[Symbol]:
 
   def initial(): Scope
 
-trait MacroLanguage[Context, OutEx](builtins: List[Builtin[Context, SymEx, OutEx]]) extends Language[SymEx, OutEx]:
-  val builtinMap: Map[String, Builtin[Context, SymEx, OutEx]] = builtins.map(b => (b.name, b)).toMap
+trait MacroLanguage[OutEx] extends Language[SymEx, OutEx]:
+  type Context
+  def initBuiltins(): List[Builtin[Context, SymEx, OutEx]]
+  val builtinMap: Map[String, Builtin[Context, SymEx, OutEx]] = initBuiltins().map(b => (b.name, b)).toMap
 
   def initMacros(): List[Macro]
   val macroMap = scala.collection.mutable.Map[String, Macro](initMacros().map(m => (m.name, m))*)
@@ -83,8 +85,9 @@ object MacroLanguage:
     val name: String = "helloJan"
     def expand(ex: SymEx): SymEx = SymEx.l(SymEx.l("name", "Jan"), "hello")
 
-case class HelloLanguage() extends MacroLanguage[HelloLanguage.Context, Program](HelloLanguage.builtins):
+case class HelloLanguage() extends MacroLanguage[Program]:
   def initMacros(): List[Macro] = List(MacroLanguage.helloJan)
+  def initBuiltins() = HelloLanguage.builtins
 
   type Context = HelloLanguage.Context
   def initialContext() = HelloLanguage.Context()
