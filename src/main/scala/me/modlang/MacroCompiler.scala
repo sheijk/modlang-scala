@@ -2,6 +2,8 @@ package me
 package modlang
 package macro_compiler
 
+import scala.Conversion
+
 trait Language[InEx, OutEx]:
   type I = InEx
   type O = OutEx
@@ -14,7 +16,7 @@ trait Language[InEx, OutEx]:
     val ctx = initialContext()
     exs.map(translate(ctx, _))
 
-extension (lang: Language[SymEx, Program])
+extension (lang: Language[?, Program])
   def compile(ast: lang.I): lang.O =
     lang.translate(lang.initialContext(), ast)
 
@@ -27,7 +29,7 @@ type SingleValue = Int | Boolean | String
 type Value = SingleValue | List[SingleValue]
 type Program = () => Value
 
-enum Tree[T]:
+enum Tree[+T]:
   case Leaf(v: T)
   case Node(l: List[Tree[T]])
   def id() = this match { case Leaf(name) => Some(name) case Node(Leaf(name) :: _) => Some(name) case _ => None }
@@ -39,16 +41,23 @@ type SymEx = Tree[String]
 object SymEx:
   def sym(x: String|SymEx): SymEx = x match { case s: String => Tree.Leaf(s) case x: SymEx => x}
   def l(args: (String|SymEx)*) = Tree.Node(args.map(sym).toList)
+  def seq(args: (String|SymEx)*) = Tree.Node(Tree.Leaf("seq") :: args.map(sym).toList)
   def hello = sym("hello")
   def helloJan = sym("helloJan")
   def name(n: String) = l("name", n)
   def shhht = sym("shhht")
 
-trait Builtin[Context, InEx, OutEx]:
+trait BuiltinBase[OutEx]:
+  type Context
+  type InEx
   val name: String
   def create(ctx: Context, expr: InEx): Option[OutEx]
 
-trait Macro:
+abstract class Builtin[Context_, InEx_, OutEx] extends BuiltinBase[OutEx]:
+  type Context = Context_
+  type InEx = InEx_
+
+abstract class Macro:
   val name: String
   def expand(ex: SymEx): SymEx
 
@@ -60,25 +69,43 @@ trait SymbolTable[Symbol]:
 
   def initial(): Scope
 
+enum MacroEx[OutEx]:
+  case S(s: String)
+  case B(b: BuiltinBase[OutEx])
+
+given symexToMacro[T] : Conversion[SymEx, Tree[MacroEx[T]]] with
+  def apply(x: SymEx): Tree[MacroEx[T]] =
+  x match
+    case Tree.Leaf(str) => Tree.Leaf(MacroEx.S(str))
+    case Tree.Node(exs) => Tree.Node(exs.map(symexToMacro(_)))
+
 trait MacroLanguage[OutEx] extends Language[SymEx, OutEx]:
   type Context
-  def initBuiltins(): List[Builtin[Context, SymEx, OutEx]]
+  type MacroBuiltin = Builtin[Context, SymEx, OutEx]
+  def initBuiltins(): List[MacroBuiltin]
   val builtinMap: Map[String, Builtin[Context, SymEx, OutEx]] = initBuiltins().map(b => (b.name, b)).toMap
 
   def initMacros(): List[Macro]
   val macroMap = scala.collection.mutable.Map[String, Macro](initMacros().map(m => (m.name, m))*)
 
-  def translateBuiltin(ctx: Context, ast: SymEx): Option[OutEx] =
-    ast.id().flatMap(builtinMap get _).flatMap(_.create(ctx, ast))
+  // enum Symbol =
+  case class NotFound()
+  def lookup(id: String): MacroBuiltin|Macro|NotFound =
+    (builtinMap get id).getOrElse(NotFound())
 
   def compilerError(msg: String): OutEx
-  def translateList(ctx: Context, exs: List[SymEx]): OutEx
-  def translate(ctx: Context, ex: SymEx): O =
-    translateBuiltin(ctx, ex).getOrElse(
-      ex.id().flatMap(macroMap get _).map(m => translate(ctx, m.expand(ex))).getOrElse(
-      ex match
-        case Tree.Node(exs) => translateList(ctx, exs)
-        case Tree.Leaf(id) => compilerError(s"Unknown ast id $id")))
+  def translateList(ctx: Context, exs: List[I]): OutEx
+  def translate(ctx: Context, ex: I): O =
+    def translate1(id: String): O =
+      lookup(id) match
+      case m: Macro => translate(ctx, m.expand(ex))
+      case b: MacroBuiltin => b.create(ctx, ex).getOrElse(compilerError(s"Builtin expression is invalid $id"))
+      case _: NotFound => compilerError(s"Unknown id $id")
+    ex match
+    case Tree.Node(Tree.Leaf("seq") :: args) => translateList(ctx, args)
+    case Tree.Node(Tree.Leaf(id) :: args) => translate1(id)
+    case Tree.Leaf(id) => translate1(id)
+    case Tree.Node(exs) => translateList(ctx, exs)
 
 object MacroLanguage:
   val helloJan = new Macro:
@@ -95,7 +122,7 @@ case class HelloLanguage() extends MacroLanguage[Program]:
   def compilerError(msg: String): Program =
     () => s"error: $msg"
 
-  def translateList(ctx: Context, exs: List[SymEx]) =
+  def translateList(ctx: Context, exs: List[I]) =
     val nestedCtx = ctx.copy()
     val outs: List[Value] = exs.map(translate(nestedCtx, _)())
     def toValues(v: Value): List[SingleValue] =
@@ -117,7 +144,7 @@ object HelloLanguage:
   type HelloBuiltin = Builtin[Context, SymEx, Program]
   val helloB = new HelloBuiltin:
     val name: String = "hello"
-    def create(ctx: Context, expr: SymEx): Option[Program] =
+    def create(ctx: this.Context, expr: SymEx): Option[Program] =
       expr match
         case Tree.Leaf(_) =>
           val msg = ctx.hello()
@@ -125,12 +152,12 @@ object HelloLanguage:
         case _ => None
   val shhhtB = new HelloBuiltin:
     val name: String = "shhht"
-    def create(ctx: Context, expr: SymEx): Option[Program] =
+    def create(ctx: this.Context, expr: SymEx): Option[Program] =
       ctx.silent = true
       Some(() => List())
   val nameB = new HelloBuiltin:
     val name: String = "name"
-    def create(ctx: Context, expr: SymEx): Option[Program] =
+    def create(ctx: this.Context, expr: SymEx): Option[Program] =
       expr match
         case Tree.Node(List(Tree.Leaf(_), Tree.Leaf(name))) =>
           ctx.name = Some(name)
@@ -143,7 +170,7 @@ def demo() =
   val helloL = HelloLanguage()
   import SymEx.*
   helloL.runAndPrint(sym("hello"))
-  helloL.runAndPrint(l("hello", "hello", "hello"))
-  helloL.runAndPrint(l("hello", "shhht", "hello"))
-  helloL.runAndPrint(l(name("foo"), hello, hello, name("bar"), hello, shhht, hello, hello))
-  helloL.runAndPrint(l(l(helloJan), hello))
+  helloL.runAndPrint(seq("hello", "hello", "hello"))
+  helloL.runAndPrint(seq("hello", "shhht", "hello"))
+  helloL.runAndPrint(seq(name("foo"), hello, hello, name("bar"), hello, shhht, hello, hello))
+  helloL.runAndPrint(seq(l(helloJan), hello))
