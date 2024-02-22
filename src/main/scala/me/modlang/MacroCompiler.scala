@@ -113,7 +113,7 @@ trait MacroLanguage[OutEx] extends Language[SymEx, OutEx]:
       ctx.symbols().lookup(id) match
       case Some(m: Macro) => translate(ctx, m.expand(ctx, ex))
       case Some(b: MacroBuiltin) => b.create(ctx, ex).getOrElse(compilerError(s"Builtin expression is invalid $id"))
-      case None | Some(_: NotFound) => compilerError(s"Unknown id $id")
+      case None | Some(_: NotFound) => compilerError(s"Unknown id $id in $ex")
     ex match
     case Tree.Node(Tree.Leaf("seq") :: args) => translateList(ctx, args)
     case Tree.Node(Tree.Leaf(id) :: _) => translate1(id)
@@ -134,16 +134,40 @@ trait MacroLanguage[OutEx] extends Language[SymEx, OutEx]:
       ctx.symbols().register(helloJan.name, helloJan)
       SymEx.l()
 
+  def symexError(msg: String, ex: SymEx): SymEx = SymEx.l("error", msg, ex)
   def defmacro = new Macro:
     type Context = MacroContext
     val name: String = "defmacro"
     def expand(ctx: Context, ex: SymEx): SymEx =
       ex match
-      case Tree.Node(Tree.Leaf(_) :: Tree.Node(List(Tree.Leaf(mname))) :: repl) =>
+      case Tree.Node(Tree.Leaf(_) :: Tree.Node(Tree.Leaf(mname) :: params) :: repl) =>
         def newMacro = new Macro:
           val name = mname
+          def toIdOrError(ex: SymEx): String =
+            ex match { case Tree.Leaf(n) => n case _ => ??? }
+          val paramNames = params.map(toIdOrError)
           def expand(ctx: Context, ex: SymEx): SymEx =
-            Tree.Node(repl)
+            ex match
+            case Tree.Node(List(_)) | Tree.Leaf(_) =>
+              repl match
+              case List(single) => single
+              case _ => Tree.Node(repl)
+            case Tree.Node(Tree.Leaf(_) :: args) =>
+              if args.length != params.length then
+                symexError(s"Expected ${params.length} arguments but found ${args.length}", ex)
+              else
+                def replace(ex: SymEx, replacements: List[(String, SymEx)]): SymEx =
+                  ex match
+                  case Tree.Leaf(name) =>
+                    replacements.filter(name == "$" + _._1) match
+                    case List((_, replacement)) => replacement
+                    case _ => ex
+                  case Tree.Node(childs) =>
+                    Tree.Node(childs.map(replace(_, replacements)))
+                val replacements = paramNames.zip(args)
+                Tree.Node(repl.map(replace(_, replacements)))
+            case Tree.Node(Tree.Node(_) :: _) | Tree.Node(List()) =>
+              ???
         ctx.symbols().register(mname, newMacro)
         Tree.Node(List())
       case _ => ???
@@ -216,3 +240,7 @@ def demo() =
   helloL.runAndPrint(seq(
       l("defmacro", l("hifoo"), l(name("foo"), hello)),
       l("hifoo")))
+  def greet(n: String) = l(name(n), hello)
+  helloL.runAndPrint(seq(
+      l("defmacro", l("swap", "left", "right"), "$right", "$left"),
+      l("swap", greet("2nd"), greet("1st"))))
