@@ -14,22 +14,33 @@ trait Language[InEx, OutEx]:
     val ctx = initialContext()
     exs.map(translate(ctx, _))
 
+extension (lang: Language[SymEx, Program])
+  def compile(ast: lang.I): lang.O =
+    lang.translate(lang.initialContext(), ast)
+
+  def runAndPrint(ast: lang.I) =
+    val program = lang.compile(ast)
+    val result = program()
+    println(s"eval($ast) = $result")
+
 type SingleValue = Int | Boolean | String
 type Value = SingleValue | List[SingleValue]
 type Program = () => Value
 
 enum SymEx:
   case S(v: String)
-  case Ls(l: List[SymEx])
-  def id() = this match { case S(name) => Some(name) case Ls(S(name) :: _) => Some(name) case _ => None }
+  case L(l: List[SymEx])
+  def id() = this match { case S(name) => Some(name) case L(S(name) :: _) => Some(name) case _ => None }
+  override def toString() = this match
+    case S(id) => s"S($id)"
+    case L(args) => args.map(_.toString()).mkString("L(", " ", ")")
 
-def compile(lang: Language[SymEx, Program], ast: lang.I): lang.O =
-  lang.translate(lang.initialContext(), ast)
-
-def runAndPrint(lang: Language[SymEx, Program], ast: lang.I) =
-  val program = compile(lang, ast)
-  val result = program()
-  println(s"eval($ast) = $result")
+object SymEx:
+  def sym(x: String|SymEx): SymEx = x match { case s: String => SymEx.S(s) case x: SymEx => x}
+  def l(args: (String|SymEx)*) = SymEx.L(args.map(sym).toList)
+  def hello = sym("hello")
+  def name(n: String) = l("name", n)
+  def shhht = sym("shhht")
 
 trait Builtin[Context, InEx, OutEx]:
   val name: String
@@ -46,7 +57,7 @@ trait MacroLanguage[Context, OutEx](builtins: List[Builtin[Context, SymEx, OutEx
   def translate(ctx: Context, ex: SymEx): O =
     translateBuiltin(ctx, ex).getOrElse(
       ex match
-        case SymEx.Ls(exs) => translateList(ctx, exs)
+        case SymEx.L(exs) => translateList(ctx, exs)
         case SymEx.S(id) => compilerError(s"Unknown ast id $id"))
 
 case class HelloLanguage() extends MacroLanguage[HelloLanguage.Context, Program](HelloLanguage.builtins):
@@ -79,8 +90,11 @@ object HelloLanguage:
   val helloB = new HelloBuiltin:
     val name: String = "hello"
     def create(ctx: Context, expr: SymEx): Option[Program] =
-      val msg = ctx.hello()
-      Some(() => msg)
+      expr match
+        case SymEx.S(_) =>
+          val msg = ctx.hello()
+          Some(() => msg)
+        case _ => None
   val shhhtB = new HelloBuiltin:
     val name: String = "shhht"
     def create(ctx: Context, expr: SymEx): Option[Program] =
@@ -90,7 +104,7 @@ object HelloLanguage:
     val name: String = "name"
     def create(ctx: Context, expr: SymEx): Option[Program] =
       expr match
-        case SymEx.Ls(List(SymEx.S(_), SymEx.S(name))) =>
+        case SymEx.L(List(SymEx.S(_), SymEx.S(name))) =>
           ctx.name = Some(name)
           Some(() => List())
         case _ => None
@@ -99,12 +113,8 @@ object HelloLanguage:
 def demo() =
   println("Macro compiler")
   val helloL = HelloLanguage()
-  def sym(x: String|SymEx): SymEx = x match { case s: String => SymEx.S(s) case x: SymEx => x}
-  def l(args: (String|SymEx)*) = SymEx.Ls(args.map(sym).toList)
-  def hello = sym("hello")
-  def name(n: String) = l("name", n)
-  def shhht = sym("shhht")
-  runAndPrint(helloL, sym("hello"))
-  runAndPrint(helloL, l("hello", "hello", "hello"))
-  runAndPrint(helloL, l("hello", "shhht", "hello"))
-  runAndPrint(helloL, l(name("foo"), hello, hello, name("bar"), hello, shhht, hello, hello))
+  import SymEx.*
+  helloL.runAndPrint(sym("hello"))
+  helloL.runAndPrint(l("hello", "hello", "hello"))
+  helloL.runAndPrint(l("hello", "shhht", "hello"))
+  helloL.runAndPrint(l(name("foo"), hello, hello, name("bar"), hello, shhht, hello, hello))
