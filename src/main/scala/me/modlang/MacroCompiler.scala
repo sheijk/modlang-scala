@@ -43,9 +43,10 @@ object SymEx:
   def l(args: (String|SymEx)*) = Tree.Node(args.map(sym).toList)
   def seq(args: (String|SymEx)*) = Tree.Node(Tree.Leaf("seq") :: args.map(sym).toList)
   def hello = sym("hello")
-  def helloJan = sym("helloJan")
   def name(n: String) = l("name", n)
   def shhht = sym("shhht")
+  def helloJan = sym("helloJan")
+  def janMode = sym("janMode")
 
 trait BuiltinBase[OutEx]:
   type Context
@@ -56,10 +57,6 @@ trait BuiltinBase[OutEx]:
 abstract class Builtin[Context_, InEx_, OutEx] extends BuiltinBase[OutEx]:
   type Context = Context_
   type InEx = InEx_
-
-abstract class Macro:
-  val name: String
-  def expand(ex: SymEx): SymEx
 
 trait Scope[Symbol]:
   def lookup(id: String): Option[Symbol]
@@ -91,8 +88,13 @@ trait MacroLanguage[OutEx] extends Language[SymEx, OutEx]:
   type Context <: ContextI
   trait ContextI:
     def symbols(): Scope[Symbol]
+    def subContext(): Context
   type MacroBuiltin = Builtin[Context, SymEx, OutEx]
   def initBuiltins(): List[MacroBuiltin]
+
+  abstract class Macro:
+    val name: String
+    def expand(ctx: Context, ex: SymEx): SymEx
 
   def initMacros(): List[Macro]
   val globals: Scope[Symbol] =
@@ -104,34 +106,42 @@ trait MacroLanguage[OutEx] extends Language[SymEx, OutEx]:
   case class NotFound()
   type Symbol = MacroBuiltin|Macro|NotFound
 
-  def lookup(id: String): Symbol =
-    globals.lookup(id).getOrElse(NotFound())
-
   def compilerError(msg: String): OutEx
   def translateList(ctx: Context, exs: List[I]): OutEx
   def translate(ctx: Context, ex: I): O =
     def translate1(id: String): O =
-      lookup(id) match
-      case m: Macro => translate(ctx, m.expand(ex))
-      case b: MacroBuiltin => b.create(ctx, ex).getOrElse(compilerError(s"Builtin expression is invalid $id"))
-      case _: NotFound => compilerError(s"Unknown id $id")
+      ctx.symbols().lookup(id) match
+      case Some(m: Macro) => translate(ctx, m.expand(ctx, ex))
+      case Some(b: MacroBuiltin) => b.create(ctx, ex).getOrElse(compilerError(s"Builtin expression is invalid $id"))
+      case None | Some(_: NotFound) => compilerError(s"Unknown id $id")
     ex match
     case Tree.Node(Tree.Leaf("seq") :: args) => translateList(ctx, args)
-    case Tree.Node(Tree.Leaf(id) :: args) => translate1(id)
+    case Tree.Node(Tree.Leaf(id) :: _) => translate1(id)
     case Tree.Leaf(id) => translate1(id)
     case Tree.Node(exs) => translateList(ctx, exs)
 
-object MacroLanguage:
-  val helloJan = new Macro:
+  type MacroContext = Context
+
+  def helloJan = new Macro:
+    type Context = MacroContext
     val name: String = "helloJan"
-    def expand(ex: SymEx): SymEx = SymEx.l(SymEx.l("name", "Jan"), "hello")
+    def expand(ctx: Context, ex: SymEx): SymEx = SymEx.l(SymEx.l("name", "Jan"), "hello")
+
+  def janMode = new Macro:
+    type Context = MacroContext
+    val name: String = "janMode"
+    def expand(ctx: Context, ex: SymEx): SymEx =
+      ctx.symbols().register(helloJan.name, helloJan)
+      SymEx.l()
 
 case class HelloLanguage() extends MacroLanguage[Program]:
-  def initMacros(): List[Macro] = List(MacroLanguage.helloJan)
+  def initMacros(): List[Macro] = List(janMode)
   def initBuiltins() = List(helloB, shhhtB, nameB)
 
-  case class Context(scope: SimpleScope[Symbol]) extends ContextI:
+  case class Context(scope: Scope[Symbol]) extends ContextI:
     def symbols() = scope
+    def subContext(): Context =
+      this.copy(scope = this.scope.subScope())
 
     var silent = false
     var name: Option[String] = None
@@ -140,20 +150,20 @@ case class HelloLanguage() extends MacroLanguage[Program]:
         case (true, _) => List()
         case (false, None) => "hello!"
         case (false, Some(name)) => s"hello $name!"
-  def initialContext() = Context(SimpleScope[Symbol](None))
+  def initialContext() = Context(globals)
 
   def compilerError(msg: String): Program =
     () => s"error: $msg"
 
   def translateList(ctx: Context, exs: List[I]) =
-    val nestedCtx = ctx.copy(scope = SimpleScope[Symbol](Some(ctx.scope)))
-    val outs: List[Value] = exs.map(translate(nestedCtx, _)())
+    val nestedCtx = ctx.subContext()
+    val outs: List[Program] = exs.map(translate(nestedCtx, _))
     def toValues(v: Value): List[SingleValue] =
       v match
       case l: List[SingleValue] => l
       case s: SingleValue => List(s)
-    val flat: List[SingleValue] = outs.flatMap(toValues)
-    () => flat
+    () =>
+      outs.flatMap(p => toValues(p()))
 
   type HelloBuiltin = MacroBuiltin
   def helloB = new HelloBuiltin:
@@ -180,10 +190,10 @@ case class HelloLanguage() extends MacroLanguage[Program]:
 
 def demo() =
   println("Macro compiler")
-  val helloL = HelloLanguage()
+  def helloL = HelloLanguage()
   import SymEx.*
   helloL.runAndPrint(sym("hello"))
   helloL.runAndPrint(seq("hello", "hello", "hello"))
   helloL.runAndPrint(seq("hello", "shhht", "hello"))
   helloL.runAndPrint(seq(name("foo"), hello, hello, name("bar"), hello, shhht, hello, hello))
-  helloL.runAndPrint(seq(l(helloJan), hello))
+  helloL.runAndPrint(seq(janMode, helloJan, hello))
