@@ -39,6 +39,7 @@ object SymEx:
   def sym(x: String|SymEx): SymEx = x match { case s: String => SymEx.S(s) case x: SymEx => x}
   def l(args: (String|SymEx)*) = SymEx.L(args.map(sym).toList)
   def hello = sym("hello")
+  def helloJan = sym("helloJan")
   def name(n: String) = l("name", n)
   def shhht = sym("shhht")
 
@@ -46,8 +47,15 @@ trait Builtin[Context, InEx, OutEx]:
   val name: String
   def create(ctx: Context, expr: InEx): Option[OutEx]
 
+trait Macro:
+  val name: String
+  def expand(ex: SymEx): SymEx
+
 trait MacroLanguage[Context, OutEx](builtins: List[Builtin[Context, SymEx, OutEx]]) extends Language[SymEx, OutEx]:
   val builtinMap: Map[String, Builtin[Context, SymEx, OutEx]] = builtins.map(b => (b.name, b)).toMap
+
+  def initMacros(): List[Macro]
+  val macroMap = scala.collection.mutable.Map[String, Macro](initMacros().map(m => (m.name, m))*)
 
   def translateBuiltin(ctx: Context, ast: SymEx): Option[OutEx] =
     ast.id().flatMap(builtinMap get _).flatMap(_.create(ctx, ast))
@@ -56,11 +64,19 @@ trait MacroLanguage[Context, OutEx](builtins: List[Builtin[Context, SymEx, OutEx
   def translateList(ctx: Context, exs: List[SymEx]): OutEx
   def translate(ctx: Context, ex: SymEx): O =
     translateBuiltin(ctx, ex).getOrElse(
+      ex.id().flatMap(macroMap get _).map(m => translate(ctx, m.expand(ex))).getOrElse(
       ex match
         case SymEx.L(exs) => translateList(ctx, exs)
-        case SymEx.S(id) => compilerError(s"Unknown ast id $id"))
+        case SymEx.S(id) => compilerError(s"Unknown ast id $id")))
+
+object MacroLanguage:
+  val helloJan = new Macro:
+    val name: String = "helloJan"
+    def expand(ex: SymEx): SymEx = SymEx.l(SymEx.l("name", "Jan"), "hello")
 
 case class HelloLanguage() extends MacroLanguage[HelloLanguage.Context, Program](HelloLanguage.builtins):
+  def initMacros(): List[Macro] = List(MacroLanguage.helloJan)
+
   type Context = HelloLanguage.Context
   def initialContext() = HelloLanguage.Context()
 
@@ -118,3 +134,4 @@ def demo() =
   helloL.runAndPrint(l("hello", "hello", "hello"))
   helloL.runAndPrint(l("hello", "shhht", "hello"))
   helloL.runAndPrint(l(name("foo"), hello, hello, name("bar"), hello, shhht, hello, hello))
+  helloL.runAndPrint(l(helloJan, hello))
