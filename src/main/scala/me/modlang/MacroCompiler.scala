@@ -4,17 +4,30 @@ package macro_compiler
 
 type Value = Int | Boolean
 
+opaque type BaseExpr = String
+
 sealed trait AstType
-case class Builtin(name: String) extends AstType
-case class Macro(name: String) extends AstType
+trait Builtin(val name: String) extends AstType:
+  def expand(e: Symex): Expr[AstType]
+  override def toString() = s"Builtin $name"
+trait Macro(val name: String) extends AstType
 
-case class Expr[Head](id: Head, childs: List[Expr[Head]] = List())
+enum Expr[Head]:
+  case Atom(hd: Head)
+  case List(childs: List[Expr[Head]])
+type Symex = Expr[String]
 
-case class Language(name: String, builtins: Set[Builtin]):
-  override def toString(): String = s"Language($name, ${builtins.size} builtins)"
+case class Language(name: String, builtins: Map[String, Builtin]):
+  def lookup(id: String): Option[AstType] =
+    builtins get id
+  def expand(e: Symex): Expr[AstType] =
+    e match
+      case Expr.Atom(hd) =>
+        lookup(hd) match
+          case Some(builtin : Builtin) => builtin.expand(e)
 
 def language(name: String, builtins: Builtin*): Language =
-  Language(name, builtins.toSet)
+  Language(name, builtins.map((b: Builtin) => (b.name, b)).toMap)
 
 case class Program[Ex](
   name: String,
@@ -23,25 +36,26 @@ case class Program[Ex](
 ):
   override def toString(): String =
     val body = exprs.map(_.toString).mkString("\n  ")
-    s"Program($name), $language,\n  {$body})"
+    s"Program $name :language ${language.name} {\n  $body\n}"
 
-type UntypedProgram = Program[Expr[String]]
+type UntypedProgram = Program[Symex]
 type TypedProgram = Program[Expr[AstType]]
 
 extension (p: UntypedProgram)
   def expand(): TypedProgram =
-    def expandExpr(e: Expr[String]): Expr[AstType] =
-      e match
-        case Expr("hello", List()) => Expr(Builtin("hello"), List())
-        case _ => ???
-    new TypedProgram(p.name, p.language, p.exprs.map(expandExpr))
+    new TypedProgram(p.name, p.language, p.exprs.map(p.language.expand(_)))
 
 def run(program: UntypedProgram) =
   val typed = program.expand()
   println(s"$program\n=>\n$typed")
 
-val langHello = language("langHello", Builtin("hello"))
+val langHello =
+  val hello = new Builtin("hello"):
+    def expand(e: Symex): Expr[AstType] = Expr.Atom(this)
+  val shht = new Builtin("shht"):
+    def expand(e: Symex): Expr[AstType] = Expr.Atom(this)
+  language("langHello", hello, shht)
 
 def demo() =
   println("Macro compiler")
-  run(new UntypedProgram("foo", langHello, List(Expr[String]("hello"), Expr[String]("hello"))))
+  run(new UntypedProgram("foo", langHello, List(Expr.Atom("hello"), Expr.Atom("hello"))))
