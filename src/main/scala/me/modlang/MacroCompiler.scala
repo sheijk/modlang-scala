@@ -34,8 +34,8 @@ enum Tree[+T]:
   case Node(l: List[Tree[T]])
   def id() = this match { case Leaf(name) => Some(name) case Node(Leaf(name) :: _) => Some(name) case _ => None }
   override def toString() = this match
-    case Leaf(id) => s"S($id)"
-    case Node(args) => args.map(_.toString()).mkString("L(", " ", ")")
+    case Leaf(id) => s"$id"
+    case Node(args) => args.map(_.toString()).mkString("(", " ", ")")
 type SymEx = Tree[String]
 
 object SymEx:
@@ -134,8 +134,22 @@ trait MacroLanguage[OutEx] extends Language[SymEx, OutEx]:
       ctx.symbols().register(helloJan.name, helloJan)
       SymEx.l()
 
+  def defmacro = new Macro:
+    type Context = MacroContext
+    val name: String = "defmacro"
+    def expand(ctx: Context, ex: SymEx): SymEx =
+      ex match
+      case Tree.Node(Tree.Leaf(_) :: Tree.Node(List(Tree.Leaf(mname))) :: repl) =>
+        def newMacro = new Macro:
+          val name = mname
+          def expand(ctx: Context, ex: SymEx): SymEx =
+            Tree.Node(repl)
+        ctx.symbols().register(mname, newMacro)
+        Tree.Node(List())
+      case _ => ???
+
 case class HelloLanguage() extends MacroLanguage[Program]:
-  def initMacros(): List[Macro] = List(janMode)
+  def initMacros(): List[Macro] = List(janMode, defmacro)
   def initBuiltins() = List(helloB, shhhtB, nameB)
 
   case class Context(scope: Scope[Symbol]) extends ContextI:
@@ -197,3 +211,8 @@ def demo() =
   helloL.runAndPrint(seq("hello", "shhht", "hello"))
   helloL.runAndPrint(seq(name("foo"), hello, hello, name("bar"), hello, shhht, hello, hello))
   helloL.runAndPrint(seq(janMode, helloJan, hello))
+  helloL.runAndPrint(seq(seq(janMode, helloJan), helloJan))
+
+  helloL.runAndPrint(seq(
+      l("defmacro", l("hifoo"), l(name("foo"), hello)),
+      l("hifoo")))
