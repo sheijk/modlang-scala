@@ -4,65 +4,44 @@ package macro_compiler
 
 type Value = Int | Boolean
 
-enum Expr:
-  case Constant(value : Value)
-  case And(lhs : Expr, rhs : Expr)
-  case Plus(lhs : Expr, rhs : Expr)
-  case GreaterThan(lhs : Expr, rhs : Expr)
+sealed trait AstType
+case class Builtin(name: String) extends AstType
+case class Macro(name: String) extends AstType
 
-def interprete(e : Expr) : Value =
-  e match
-    case Expr.Constant(value) => value
-    case Expr.And(lhs, rhs) =>
-      val lhsValue = interprete(lhs)
-      val rhsValue = interprete(rhs)
-      (lhsValue, rhsValue) match
-        case (lb : Boolean, rb : Boolean) =>
-          lb && rb
-        case _ => throw Error("Expected types Expr.And(bool, bool)")
+case class Expr[Head](id: Head, childs: List[Expr[Head]] = List())
 
-    case Expr.Plus(lhs, rhs) =>
-      val lhsValue = interprete(lhs)
-      val rhsValue = interprete(rhs)
-      (lhsValue, rhsValue) match
-        case (li: Int, lr: Int) =>
-          li + lr
-        case _ => throw Error("Expected types Expr.Plus(int, int)")
+case class Language(name: String, builtins: Set[Builtin]):
+  override def toString(): String = s"Language($name, ${builtins.size} builtins)"
 
-    case Expr.GreaterThan(lhs, rhs) =>
-      val lhsValue = interprete(lhs)
-      val rhsValue = interprete(rhs)
-      (lhsValue, rhsValue) match
-        case (li: Int, lr: Int) =>
-          li > lr
-        case _ => throw Error("Expected types Expr.Plus(int, int)")
+def language(name: String, builtins: Builtin*): Language =
+  Language(name, builtins.toSet)
 
-def run(e : Expr) =
-  val value = interprete(e)
-  println(s"  Got $value by running $e")
+case class Program[Ex](
+  name: String,
+  language: Language,
+  exprs: List[Ex],
+):
+  override def toString(): String =
+    val body = exprs.map(_.toString).mkString("\n  ")
+    s"Program($name), $language,\n  {$body})"
 
-class Builder:
-  def int(v: Int): Value = v
-  def bool(v: Boolean): Value = v
-  def c(v: Value): Expr = Expr.Constant(v)
-  def c(v : Int): Expr = c(int(v))
-  def c(v : Boolean): Expr = c(bool(v))
-  def plus(lhs: Expr, rhs: Expr) = Expr.Plus(lhs, rhs)
-  def and(lhs: Expr, rhs: Expr) = Expr.And(lhs, rhs)
-  def greaterThan(lhs: Expr, rhs: Expr) = Expr.GreaterThan(lhs, rhs)
+type UntypedProgram = Program[Expr[String]]
+type TypedProgram = Program[Expr[AstType]]
+
+extension (p: UntypedProgram)
+  def expand(): TypedProgram =
+    def expandExpr(e: Expr[String]): Expr[AstType] =
+      e match
+        case Expr("hello", List()) => Expr(Builtin("hello"), List())
+        case _ => ???
+    new TypedProgram(p.name, p.language, p.exprs.map(expandExpr))
+
+def run(program: UntypedProgram) =
+  val typed = program.expand()
+  println(s"$program\n=>\n$typed")
+
+val langHello = language("langHello", Builtin("hello"))
 
 def demo() =
-  val builder = Builder()
-  import builder.*
-  val programs = List(
-    plus(c(10), c(5)),
-    and(greaterThan(c(10), c(5)), greaterThan(c(3), c(2))),
-    and(c(true), c(false)),
-    and(greaterThan(c(10), c(5)), greaterThan(c(10), c(5))),
-    plus(c(10), c(20)),
-  )
-  def run(ex: Expr) =
-    val r = interprete(ex)
-    println(s"  $ex = $r")
-  programs.foreach(run)
-
+  println("Macro compiler")
+  run(new UntypedProgram("foo", langHello, List(Expr[String]("hello"), Expr[String]("hello"))))
