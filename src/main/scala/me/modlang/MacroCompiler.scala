@@ -61,13 +61,21 @@ abstract class Macro:
   val name: String
   def expand(ex: SymEx): SymEx
 
-trait SymbolTable[Symbol]:
-  trait Scope:
-    def lookup(id: String): Symbol
-    def add(id: String, sym: Symbol): Unit
-    def subScope(): Scope
+trait Scope[Symbol]:
+  def lookup(id: String): Option[Symbol]
+  def register(id: String, sym: Symbol): Unit
+  def subScope(): Scope[Symbol]
 
-  def initial(): Scope
+class SimpleScope[Symbol](parent: Option[Scope[Symbol]]) extends Scope[Symbol]:
+  var table = Map[String, Symbol]()
+  def lookup(id: String): Option[Symbol] =
+    table get id match
+      case Some(x) => Some(x)
+      case None => parent.flatMap(_.lookup(id))
+  def register(id: String, sym: Symbol): Unit =
+    table = table + (id -> sym)
+  def subScope(): Scope[Symbol] =
+    SimpleScope[Symbol](Some(this))
 
 enum MacroEx[OutEx]:
   case S(s: String)
@@ -83,15 +91,19 @@ trait MacroLanguage[OutEx] extends Language[SymEx, OutEx]:
   type Context
   type MacroBuiltin = Builtin[Context, SymEx, OutEx]
   def initBuiltins(): List[MacroBuiltin]
-  val builtinMap: Map[String, Builtin[Context, SymEx, OutEx]] = initBuiltins().map(b => (b.name, b)).toMap
 
   def initMacros(): List[Macro]
-  val macroMap = scala.collection.mutable.Map[String, Macro](initMacros().map(m => (m.name, m))*)
+  val globals: Scope[Symbol] =
+    val table = SimpleScope[Symbol](None)
+    initBuiltins().foreach(b => table.register(b.name, b))
+    initMacros().foreach(m => table.register(m.name, m))
+    table
 
-  // enum Symbol =
   case class NotFound()
-  def lookup(id: String): MacroBuiltin|Macro|NotFound =
-    (builtinMap get id).getOrElse(NotFound())
+  type Symbol = MacroBuiltin|Macro|NotFound
+
+  def lookup(id: String): Symbol =
+    globals.lookup(id).getOrElse(NotFound())
 
   def compilerError(msg: String): OutEx
   def translateList(ctx: Context, exs: List[I]): OutEx
