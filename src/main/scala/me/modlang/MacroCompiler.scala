@@ -6,56 +6,58 @@ type Value = Int | Boolean
 
 opaque type BaseExpr = String
 
-sealed trait AstType
-trait Builtin(val name: String) extends AstType:
-  def expand(e: Symex): Expr[AstType]
+sealed trait AstType[Output]
+trait Builtin[Output](val name: String) extends AstType[Output]:
+  def expand(e: Symex): Output
   override def toString() = s"Builtin $name"
-trait Macro(val name: String) extends AstType
+trait Macro[Output](val name: String) extends AstType[Output]
 
 enum Expr[Head]:
   case Atom(hd: Head)
   case List(childs: List[Expr[Head]])
 type Symex = Expr[String]
 
-case class Language(name: String, builtins: Map[String, Builtin]):
-  def lookup(id: String): Option[AstType] =
+case class Language[Output](name: String, builtins: Map[String, Builtin[Output]]):
+  def lookup(id: String): Option[Builtin[Output]] =
     builtins get id
-  def expand(e: Symex): Expr[AstType] =
+  def expand(e: Symex): Output =
     e match
       case Expr.Atom(hd) =>
         lookup(hd) match
-          case Some(builtin : Builtin) => builtin.expand(e)
+          case Some(builtin : Builtin[Output]) => builtin.expand(e)
 
-def language(name: String, builtins: Builtin*): Language =
-  Language(name, builtins.map((b: Builtin) => (b.name, b)).toMap)
+  def compile(p: List[Symex]): List[Output] =
+    p.map(expand(_))
+
+def language[Output](name: String, builtins: Builtin[Output]*): Language[Output] =
+  Language(name, builtins.map((b: Builtin[Output]) => (b.name, b)).toMap)
 
 case class Program[Ex](
   name: String,
-  language: Language,
+  language: Language[Ex],
   exprs: List[Ex],
 ):
   override def toString(): String =
     val body = exprs.map(_.toString).mkString("\n  ")
     s"Program $name :language ${language.name} {\n  $body\n}"
 
-type UntypedProgram = Program[Symex]
-type TypedProgram = Program[Expr[AstType]]
+type OutputLang = () => Unit
+type UntypedProgram = List[Symex]
+type TypedProgram = List[OutputLang]
 
-extension (p: UntypedProgram)
-  def expand(): TypedProgram =
-    new TypedProgram(p.name, p.language, p.exprs.map(p.language.expand(_)))
-
-def run(program: UntypedProgram) =
-  val typed = program.expand()
-  println(s"$program\n=>\n$typed")
+def run(l: Language[OutputLang], ast: List[Symex]) =
+  val out: List[OutputLang] = l.compile(ast)
+  out.foreach((program: OutputLang) =>
+    println(s"Running $ast")
+    program())
 
 val langHello =
-  val hello = new Builtin("hello"):
-    def expand(e: Symex): Expr[AstType] = Expr.Atom(this)
-  val shht = new Builtin("shht"):
-    def expand(e: Symex): Expr[AstType] = Expr.Atom(this)
+  val hello = new Builtin[OutputLang]("hello"):
+    def expand(e: Symex): OutputLang = () => println("Hello!")
+  val shht = new Builtin[OutputLang]("shht"):
+    def expand(e: Symex): OutputLang = () => println("shht!")
   language("langHello", hello, shht)
 
 def demo() =
   println("Macro compiler")
-  run(new UntypedProgram("foo", langHello, List(Expr.Atom("hello"), Expr.Atom("hello"))))
+  run(langHello, List(Expr.Atom("hello"), Expr.Atom("hello")))
