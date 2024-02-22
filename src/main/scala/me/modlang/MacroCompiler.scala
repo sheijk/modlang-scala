@@ -21,7 +21,7 @@ type Program = () => Value
 enum SymEx:
   case S(v: String)
   case Ls(l: List[SymEx])
-  def id() = this match { case S(name) => Some(name) case _ => None }
+  def id() = this match { case S(name) => Some(name) case Ls(S(name) :: _) => Some(name) case _ => None }
 
 def compile(lang: Language[SymEx, Program], ast: lang.I): lang.O =
   lang.translate(lang.initialContext(), ast)
@@ -42,8 +42,29 @@ trait MacroLanguage[Context, OutEx](builtins: List[Builtin[Context, SymEx, OutEx
     ast.id().flatMap(builtinMap get _).flatMap(_.create(ctx, ast))
 
   def compilerError(msg: String): OutEx
+  def translateList(ctx: Context, exs: List[SymEx]): OutEx
   def translate(ctx: Context, ex: SymEx): O =
-    translateBuiltin(ctx, ex).getOrElse(compilerError(s"Unknown ast id ${ex.id().getOrElse("*List*")}"))
+    translateBuiltin(ctx, ex).getOrElse(
+      ex match
+        case SymEx.Ls(exs) => translateList(ctx, exs)
+        case SymEx.S(id) => compilerError(s"Unknown ast id $id"))
+
+case class HelloLanguage() extends MacroLanguage[HelloLanguage.Context, Program](HelloLanguage.builtins):
+  type Context = HelloLanguage.Context
+  def initialContext() = HelloLanguage.Context()
+
+  def compilerError(msg: String): Program =
+    () => s"error: $msg"
+
+  def translateList(ctx: Context, exs: List[SymEx]) =
+    val nestedCtx = ctx.copy()
+    val outs: List[Value] = exs.map(translate(nestedCtx, _)())
+    def toValues(v: Value): List[SingleValue] =
+      v match
+      case l: List[SingleValue] => l
+      case s: SingleValue => List(s)
+    val flat: List[SingleValue] = outs.flatMap(toValues)
+    () => flat
 
 object HelloLanguage:
   case class Context():
@@ -57,43 +78,23 @@ object HelloLanguage:
   type HelloBuiltin = Builtin[Context, SymEx, Program]
   val helloB = new HelloBuiltin:
     val name: String = "hello"
-    def create(ctx: Context, expr: SymEx): Option[Program] = ???
+    def create(ctx: Context, expr: SymEx): Option[Program] =
+      val msg = ctx.hello()
+      Some(() => msg)
   val shhhtB = new HelloBuiltin:
     val name: String = "shhht"
-    def create(ctx: Context, expr: SymEx): Option[Program] = ???
+    def create(ctx: Context, expr: SymEx): Option[Program] =
+      ctx.silent = true
+      Some(() => List())
   val nameB = new HelloBuiltin:
     val name: String = "name"
-    def create(ctx: Context, expr: SymEx): Option[Program] = ???
+    def create(ctx: Context, expr: SymEx): Option[Program] =
+      expr match
+        case SymEx.Ls(List(SymEx.S(_), SymEx.S(name))) =>
+          ctx.name = Some(name)
+          Some(() => List())
+        case _ => None
   val builtins: List[Builtin[Context, SymEx, Program]] = List(helloB, shhhtB, nameB)
-
-case class HelloLanguage() extends MacroLanguage[HelloLanguage.Context, Program](HelloLanguage.builtins):
-  val nothing: Value = List()
-  type Context = HelloLanguage.Context
-  def initialContext() = HelloLanguage.Context()
-
-  def compilerError(msg: String): Program = () => s"error: $msg"
-  override def translate(ctx: Context, ex: I): Program =
-    ex match
-      case SymEx.S("hello") =>
-        val msg = ctx.hello()
-        () => msg
-      case SymEx.S("shhht") =>
-        ctx.silent = true
-        () => nothing
-      case SymEx.Ls(List(SymEx.S("name"), SymEx.S(name))) =>
-        ctx.name = Some(name)
-        () => nothing
-      case SymEx.Ls(exs) =>
-        val nestedCtx = ctx.copy()
-        val outs: List[Value] = exs.map(translate(nestedCtx, _)())
-        def toValues(v: Value): List[SingleValue] =
-          v match
-          case l: List[SingleValue] => l
-          case s: SingleValue => List(s)
-        val flat: List[SingleValue] = outs.flatMap(toValues)
-        () => flat
-      case _ =>
-        super.translate(ctx, ex)
 
 def demo() =
   println("Macro compiler")
