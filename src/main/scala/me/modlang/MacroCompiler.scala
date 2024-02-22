@@ -27,17 +27,18 @@ type SingleValue = Int | Boolean | String
 type Value = SingleValue | List[SingleValue]
 type Program = () => Value
 
-enum SymEx:
-  case S(v: String)
-  case L(l: List[SymEx])
-  def id() = this match { case S(name) => Some(name) case L(S(name) :: _) => Some(name) case _ => None }
+enum Tree[T]:
+  case Leaf(v: T)
+  case Node(l: List[Tree[T]])
+  def id() = this match { case Leaf(name) => Some(name) case Node(Leaf(name) :: _) => Some(name) case _ => None }
   override def toString() = this match
-    case S(id) => s"S($id)"
-    case L(args) => args.map(_.toString()).mkString("L(", " ", ")")
+    case Leaf(id) => s"S($id)"
+    case Node(args) => args.map(_.toString()).mkString("L(", " ", ")")
+type SymEx = Tree[String]
 
 object SymEx:
-  def sym(x: String|SymEx): SymEx = x match { case s: String => SymEx.S(s) case x: SymEx => x}
-  def l(args: (String|SymEx)*) = SymEx.L(args.map(sym).toList)
+  def sym(x: String|SymEx): SymEx = x match { case s: String => Tree.Leaf(s) case x: SymEx => x}
+  def l(args: (String|SymEx)*) = Tree.Node(args.map(sym).toList)
   def hello = sym("hello")
   def helloJan = sym("helloJan")
   def name(n: String) = l("name", n)
@@ -50,6 +51,14 @@ trait Builtin[Context, InEx, OutEx]:
 trait Macro:
   val name: String
   def expand(ex: SymEx): SymEx
+
+trait SymbolTable[Symbol]:
+  trait Scope:
+    def lookup(id: String): Symbol
+    def add(id: String, sym: Symbol): Unit
+    def subScope(): Scope
+
+  def initial(): Scope
 
 trait MacroLanguage[Context, OutEx](builtins: List[Builtin[Context, SymEx, OutEx]]) extends Language[SymEx, OutEx]:
   val builtinMap: Map[String, Builtin[Context, SymEx, OutEx]] = builtins.map(b => (b.name, b)).toMap
@@ -66,8 +75,8 @@ trait MacroLanguage[Context, OutEx](builtins: List[Builtin[Context, SymEx, OutEx
     translateBuiltin(ctx, ex).getOrElse(
       ex.id().flatMap(macroMap get _).map(m => translate(ctx, m.expand(ex))).getOrElse(
       ex match
-        case SymEx.L(exs) => translateList(ctx, exs)
-        case SymEx.S(id) => compilerError(s"Unknown ast id $id")))
+        case Tree.Node(exs) => translateList(ctx, exs)
+        case Tree.Leaf(id) => compilerError(s"Unknown ast id $id")))
 
 object MacroLanguage:
   val helloJan = new Macro:
@@ -107,7 +116,7 @@ object HelloLanguage:
     val name: String = "hello"
     def create(ctx: Context, expr: SymEx): Option[Program] =
       expr match
-        case SymEx.S(_) =>
+        case Tree.Leaf(_) =>
           val msg = ctx.hello()
           Some(() => msg)
         case _ => None
@@ -120,7 +129,7 @@ object HelloLanguage:
     val name: String = "name"
     def create(ctx: Context, expr: SymEx): Option[Program] =
       expr match
-        case SymEx.L(List(SymEx.S(_), SymEx.S(name))) =>
+        case Tree.Node(List(Tree.Leaf(_), Tree.Leaf(name))) =>
           ctx.name = Some(name)
           Some(() => List())
         case _ => None
@@ -134,4 +143,4 @@ def demo() =
   helloL.runAndPrint(l("hello", "hello", "hello"))
   helloL.runAndPrint(l("hello", "shhht", "hello"))
   helloL.runAndPrint(l(name("foo"), hello, hello, name("bar"), hello, shhht, hello, hello))
-  helloL.runAndPrint(l(helloJan, hello))
+  helloL.runAndPrint(l(l(helloJan), hello))
