@@ -106,15 +106,20 @@ trait MacroLanguage[OutEx] extends Language[SymEx, OutEx]:
   case class NotFound()
   type Symbol = MacroBuiltin|Macro|NotFound
 
-  def compilerError(msg: String): OutEx
+  def compilerError(msg: String, ex: SymEx): OutEx
   def translateList(ctx: Context, exs: List[I]): OutEx
   def translate(ctx: Context, ex: I): O =
     def translate1(id: String): O =
       ctx.symbols().lookup(id) match
-      case Some(m: Macro) => translate(ctx, m.expand(ctx, ex))
-      case Some(b: MacroBuiltin) => b.create(ctx, ex).getOrElse(compilerError(s"Builtin expression is invalid $id"))
-      case None | Some(_: NotFound) => compilerError(s"Unknown id $id in $ex")
+      case Some(m: Macro) =>
+        translate(ctx, m.expand(ctx, ex))
+      case Some(b: MacroBuiltin) =>
+        b.create(ctx, ex).getOrElse(
+          compilerError(s"Builtin expression $id is invalid", ex))
+      case None | Some(_: NotFound) =>
+        compilerError(s"Unknown id $id", ex)
     ex match
+    case Tree.Node(Tree.Leaf("error") :: Tree.Leaf(msg) :: args ) => compilerError(msg, Tree.Node(args))
     case Tree.Node(Tree.Leaf("seq") :: args) => translateList(ctx, args)
     case Tree.Node(Tree.Leaf(id) :: _) => translate1(id)
     case Tree.Leaf(id) => translate1(id)
@@ -147,6 +152,9 @@ trait MacroLanguage[OutEx] extends Language[SymEx, OutEx]:
             ex match { case Tree.Leaf(n) => n case _ => ??? }
           val paramNames = params.map(toIdOrError)
           def expand(ctx: Context, ex: SymEx): SymEx =
+            def expectedMsg =
+              val args = paramNames.mkString(" ")
+              s"Expected ($mname $args)"
             ex match
             case Tree.Node(List(_)) | Tree.Leaf(_) =>
               repl match
@@ -154,7 +162,7 @@ trait MacroLanguage[OutEx] extends Language[SymEx, OutEx]:
               case _ => Tree.Node(repl)
             case Tree.Node(Tree.Leaf(_) :: args) =>
               if args.length != params.length then
-                symexError(s"Expected ${params.length} arguments but found ${args.length}", ex)
+                symexError(s"$expectedMsg but found ${args.length} arguments", ex)
               else
                 def replace(ex: SymEx, replacements: List[(String, SymEx)]): SymEx =
                   ex match
@@ -167,7 +175,7 @@ trait MacroLanguage[OutEx] extends Language[SymEx, OutEx]:
                 val replacements = paramNames.zip(args)
                 Tree.Node(repl.map(replace(_, replacements)))
             case Tree.Node(Tree.Node(_) :: _) | Tree.Node(List()) =>
-              ???
+              symexError(expectedMsg, ex)
         ctx.symbols().register(mname, newMacro)
         Tree.Node(List())
       case _ => ???
@@ -190,8 +198,8 @@ case class HelloLanguage() extends MacroLanguage[Program]:
         case (false, Some(name)) => s"hello $name!"
   def initialContext() = Context(globals)
 
-  def compilerError(msg: String): Program =
-    () => s"error: $msg"
+  def compilerError(msg: String, ex: SymEx): Program =
+    () => s"error: $msg in $ex"
 
   def translateList(ctx: Context, exs: List[I]) =
     val nestedCtx = ctx.subContext()
@@ -244,3 +252,9 @@ def demo() =
   helloL.runAndPrint(seq(
       l("defmacro", l("swap", "left", "right"), "$right", "$left"),
       l("swap", greet("2nd"), greet("1st"))))
+  helloL.runAndPrint(seq(
+      l("defmacro", l("swap", "left", "right"), "$right", "$left"),
+      l("swap")))
+  helloL.runAndPrint(seq(
+      l("defmacro", l("swap", "left", "right"), "$right", "$left"),
+      l("swap", "too", "many", "args")))
