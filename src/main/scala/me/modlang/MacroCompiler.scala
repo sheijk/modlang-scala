@@ -36,7 +36,17 @@ enum Tree[+T]:
   override def toString() = this match
     case Leaf(id) => s"$id"
     case Node(args) => args.map(_.toString()).mkString("(", " ", ")")
+
 type SymEx = Tree[String]
+extension (ex: SymEx)
+  def replace(replacements: List[(String, SymEx)]): SymEx =
+    ex match
+    case Tree.Leaf(name) =>
+      replacements.filter(name == "$" + _._1) match
+      case List((_, replacement)) => replacement
+      case _ => ex
+    case Tree.Node(childs) =>
+      Tree.Node(childs.map(_.replace(replacements)))
 
 object SymEx:
   def sym(x: String|SymEx): SymEx = x match { case s: String => Tree.Leaf(s) case x: SymEx => x}
@@ -48,6 +58,7 @@ object SymEx:
   def helloJan = sym("helloJan")
   def janMode = sym("janMode")
   def nothing = l()
+  def error(msg: String, ex: SymEx): SymEx = SymEx.l("error", msg, ex)
 
 trait BuiltinBase[OutEx]:
   type Context
@@ -140,53 +151,46 @@ trait MacroLanguage[OutEx] extends Language[SymEx, OutEx]:
       ctx.symbols().register(helloJan.name, helloJan)
       SymEx.l()
 
-  def symexError(msg: String, ex: SymEx): SymEx = SymEx.l("error", msg, ex)
+  def symbolMacro(mname: String, repl: List[SymEx]) = new Macro:
+    val name = mname
+    def expand(ctx: Context, ex: SymEx): SymEx =
+      ex match
+      case Tree.Node(List(_)) | Tree.Leaf(_) =>
+        repl match
+        case List(single) => single
+        case _ => Tree.Node(repl)
+      case _ =>
+        SymEx.error("Expected 0 arguments", ex)
+
+  def replacementMacro(mname: String, paramNames: List[String], repl: List[SymEx]) = new Macro:
+    val name = mname
+    def expand(ctx: Context, ex: SymEx): SymEx =
+      def expectedMsg =
+        val args = paramNames.mkString(" ")
+        s"Expected ($mname $args)"
+      ex match
+      case Tree.Node(Tree.Leaf(_) :: args) =>
+        if args.length != paramNames.length then
+          SymEx.error(s"$expectedMsg but found ${args.length} arguments", ex)
+        else
+          val replacements = paramNames.zip(args)
+          Tree.Node(repl.map(_.replace(replacements)))
+      case _ =>
+        SymEx.error(expectedMsg, ex)
+
   def defmacro = new Macro:
     type Context = MacroContext
     val name: String = "defmacro"
     def expand(ctx: Context, ex: SymEx): SymEx =
       ex match
       case Tree.Node(Tree.Leaf(_) :: Tree.Node(List(Tree.Leaf(mname))) :: repl) =>
-        def symbolMacro = new Macro:
-          val name = mname
-          def expand(ctx: Context, ex: SymEx): SymEx =
-            ex match
-            case Tree.Node(List(_)) | Tree.Leaf(_) =>
-              repl match
-              case List(single) => single
-              case _ => Tree.Node(repl)
-            case _ =>
-              symexError("Expected 0 arguments", ex)
-        ctx.symbols().register(mname, symbolMacro)
+        ctx.symbols().register(mname, symbolMacro(mname, repl))
         SymEx.nothing
       case Tree.Node(Tree.Leaf(_) :: Tree.Node(Tree.Leaf(mname) :: params) :: repl) =>
-        def newMacro = new Macro:
-          val name = mname
-          def toIdOrError(ex: SymEx): String =
-            ex match { case Tree.Leaf(n) => n case _ => ??? }
-          val paramNames = params.map(toIdOrError)
-          def expand(ctx: Context, ex: SymEx): SymEx =
-            def expectedMsg =
-              val args = paramNames.mkString(" ")
-              s"Expected ($mname $args)"
-            ex match
-            case Tree.Node(Tree.Leaf(_) :: args) =>
-              if args.length != params.length then
-                symexError(s"$expectedMsg but found ${args.length} arguments", ex)
-              else
-                def replace(ex: SymEx, replacements: List[(String, SymEx)]): SymEx =
-                  ex match
-                  case Tree.Leaf(name) =>
-                    replacements.filter(name == "$" + _._1) match
-                    case List((_, replacement)) => replacement
-                    case _ => ex
-                  case Tree.Node(childs) =>
-                    Tree.Node(childs.map(replace(_, replacements)))
-                val replacements = paramNames.zip(args)
-                Tree.Node(repl.map(replace(_, replacements)))
-            case _ =>
-              symexError(expectedMsg, ex)
-        ctx.symbols().register(mname, newMacro)
+        def toIdOrError(ex: SymEx): String =
+          ex match { case Tree.Leaf(n) => n case _ => ??? }
+        val paramNames = params.map(toIdOrError)
+        ctx.symbols().register(mname, replacementMacro(mname, paramNames, repl))
         SymEx.nothing
       case _ => ???
 
