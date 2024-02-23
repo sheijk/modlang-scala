@@ -47,6 +47,7 @@ object SymEx:
   def shhht = sym("shhht")
   def helloJan = sym("helloJan")
   def janMode = sym("janMode")
+  def nothing = l()
 
 trait BuiltinBase[OutEx]:
   type Context
@@ -145,6 +146,19 @@ trait MacroLanguage[OutEx] extends Language[SymEx, OutEx]:
     val name: String = "defmacro"
     def expand(ctx: Context, ex: SymEx): SymEx =
       ex match
+      case Tree.Node(Tree.Leaf(_) :: Tree.Node(List(Tree.Leaf(mname))) :: repl) =>
+        def symbolMacro = new Macro:
+          val name = mname
+          def expand(ctx: Context, ex: SymEx): SymEx =
+            ex match
+            case Tree.Node(List(_)) | Tree.Leaf(_) =>
+              repl match
+              case List(single) => single
+              case _ => Tree.Node(repl)
+            case _ =>
+              symexError("Expected 0 arguments", ex)
+        ctx.symbols().register(mname, symbolMacro)
+        SymEx.nothing
       case Tree.Node(Tree.Leaf(_) :: Tree.Node(Tree.Leaf(mname) :: params) :: repl) =>
         def newMacro = new Macro:
           val name = mname
@@ -156,10 +170,6 @@ trait MacroLanguage[OutEx] extends Language[SymEx, OutEx]:
               val args = paramNames.mkString(" ")
               s"Expected ($mname $args)"
             ex match
-            case Tree.Node(List(_)) | Tree.Leaf(_) =>
-              repl match
-              case List(single) => single
-              case _ => Tree.Node(repl)
             case Tree.Node(Tree.Leaf(_) :: args) =>
               if args.length != params.length then
                 symexError(s"$expectedMsg but found ${args.length} arguments", ex)
@@ -174,10 +184,10 @@ trait MacroLanguage[OutEx] extends Language[SymEx, OutEx]:
                     Tree.Node(childs.map(replace(_, replacements)))
                 val replacements = paramNames.zip(args)
                 Tree.Node(repl.map(replace(_, replacements)))
-            case Tree.Node(Tree.Node(_) :: _) | Tree.Node(List()) =>
+            case _ =>
               symexError(expectedMsg, ex)
         ctx.symbols().register(mname, newMacro)
-        Tree.Node(List())
+        SymEx.nothing
       case _ => ???
 
 case class HelloLanguage() extends MacroLanguage[Program]:
@@ -248,6 +258,9 @@ def demo() =
   helloL.runAndPrint(seq(
       l("defmacro", l("hifoo"), l(name("foo"), hello)),
       l("hifoo")))
+  helloL.runAndPrint(seq(
+      l("defmacro", l("hifoo"), l(name("foo"), hello)),
+      sym("hifoo")))
   def greet(n: String) = l(name(n), hello)
   helloL.runAndPrint(seq(
       l("defmacro", l("swap", "left", "right"), "$right", "$left"),
