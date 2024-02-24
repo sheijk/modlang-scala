@@ -12,7 +12,7 @@ final class MacroCompilerSuite[Expr] extends TestSuite:
     def check(ex: SymEx, expected: Value, loc: Location) =
       val program = helloL.compile(ex)
       val result: Value = program()
-      assertEquals[Any, Any](expected, result, "examples")(using toMunit(loc), munit.Compare.defaultCompare)
+      assertEquals[Any, Any](result, expected, "examples")(using toMunit(loc), munit.Compare.defaultCompare)
     examples.foreach(check)
 
   test("SymEx.bindIdsInPattern should work"):
@@ -29,4 +29,7 @@ final class MacroCompilerSuite[Expr] extends TestSuite:
       List(("$rhs", sym("5"))))
     assertEquals(l("opt", l("+", "0", l("3", "*", "7"))).bindIdsInPattern(addMulPattern),
       List(("$rhs", l("3", "*", "7"))))
+    assertEquals(
+      l("foo", "1", "2", l(name("3rd"), hello)).bindIdsInPattern(l("foo", "1", "2", "$three")),
+      List(("$three", l(name("3rd"), hello))))
 

@@ -56,21 +56,14 @@ trait MacroLanguage[OutEx] extends Language[SymEx, OutEx]:
       case _ =>
         SymEx.error("Expected 0 arguments", ex)
 
-  def replacementMacro(mname: String, paramNames: List[String], repl: List[SymEx]) = new Macro:
+  def replacementMacro(mname: String, pattern: SymEx, repl: List[SymEx]) = new Macro:
     val name = mname
     def expand(ctx: Context, ex: SymEx): SymEx =
-      def expectedMsg =
-        val args = paramNames.mkString(" ")
-        s"Expected ($mname $args)"
-      ex match
-      case Tree.Node(Tree.Leaf(_) :: args) =>
-        if args.length != paramNames.length then
-          SymEx.error(s"$expectedMsg but found ${args.length} arguments", ex)
-        else
-          val replacements = paramNames.zip(args)
-          Tree.Node(repl.map(_.replace(replacements)))
-      case _ =>
-        SymEx.error(expectedMsg, ex)
+      val replacements = ex.bindIdsInPattern(pattern)
+      val newExs = repl.map(_.replace(replacements))
+      val r = Tree.Node(newExs)
+      println(s"Macro $pattern\n  in $ex\n  matches $replacements\n  to $repl\n  result $r")
+      r
 
   def defmacro = new Macro:
     type Context = MacroContext
@@ -80,17 +73,9 @@ trait MacroLanguage[OutEx] extends Language[SymEx, OutEx]:
       case Tree.Node(Tree.Leaf(_) :: Tree.Node(List(Tree.Leaf(mname))) :: repl) =>
         ctx.symbols().register(mname, symbolMacro(mname, repl))
         SymEx.nothing
-      case Tree.Node(Tree.Leaf(_) :: Tree.Node(Tree.Leaf(mname) :: params) :: repl) =>
-        var error: Option[SymEx] = None
-        def toIdOrError(ex: SymEx): String =
-          ex match
-            case Tree.Leaf(n @ s"$$$_") => n
-            case _ =>
-              error = Some(SymEx.error("Macro parameter should be param starting with a $", ex))
-              "*error*"
-        val paramNames = params.map(toIdOrError)
-        ctx.symbols().register(mname, replacementMacro(mname, paramNames, repl))
-        error.getOrElse(SymEx.nothing)
+      case Tree.Node(Tree.Leaf(_) :: (pattern @ Tree.Node(Tree.Leaf(mname) :: _)) :: repl) =>
+        ctx.symbols().register(mname, replacementMacro(mname, pattern, repl))
+        SymEx.nothing
       case _ =>
         SymEx.error("Expected (defmacro (name [args:id ...]))", ex)
 
