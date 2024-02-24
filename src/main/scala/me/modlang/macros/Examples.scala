@@ -33,16 +33,14 @@ def examples: List[(SymEx, Value, tfi.Location)] =
       l("defmacro", l("swap", "$left", "$right"), "$right", "$left"),
       l("swap", greet("2nd"), greet("1st"))),
      List("hello 1st!", "hello 2nd!")),
-    // f(l("defmacro", l("invalidMacro", "invalidName"), "nope"),
-    //   "error: Macro parameter should be param starting with a $ in (invalidName)"),
-    // f(seq(
-    //   l("defmacro", l("swap", "$left", "$right"), "$right", "$left"),
-    //   l("swap")),
-    // List("error: Expected (swap $left $right) but found 0 arguments in ((swap))")),
-    // f(seq(
-    //   l("defmacro", l("swap", "$left", "$right"), "$right", "$left"),
-    //   l("swap", "too", "many", "args")),
-    //  List("error: Expected (swap $left $right) but found 3 arguments in ((swap too many args))")),
+    f(seq(
+      l("defmacro", l("swap", "$left", "$right"), "$right", "$left"),
+      l("swap")),
+    List("error: Expected (swap $left $right) but found 0 arguments in ((swap))")),
+    f(seq(
+      l("defmacro", l("swap", "$left", "$right"), "$right", "$left"),
+      l("swap", "too", "many", "args")),
+     List("error: Expected (swap $left $right) but found 3 arguments in ((swap too many args))")),
 
     // Pattern macros
     f(seq(

@@ -59,11 +59,13 @@ trait MacroLanguage[OutEx] extends Language[SymEx, OutEx]:
   def replacementMacro(mname: String, pattern: SymEx, repl: List[SymEx]) = new Macro:
     val name = mname
     def expand(ctx: Context, ex: SymEx): SymEx =
-      val replacements = ex.bindIdsInPattern(pattern)
-      val newExs = repl.map(_.replace(replacements))
-      val r = Tree.Node(newExs)
-      println(s"Macro $pattern\n  in $ex\n  matches $replacements\n  to $repl\n  result $r")
-      r
+      ex.bindIdsInPattern(pattern) match
+      case Right(replacements) =>
+        val newExs = repl.map(_.replace(replacements))
+        val r = Tree.Node(newExs)
+        println(s"Macro $pattern\n  in $ex\n  matches $replacements\n  to $repl\n  result $r")
+        r
+      case _ => ???
 
   def defmacro = new Macro:
     type Context = MacroContext

@@ -22,18 +22,19 @@ extension (ex: SymEx)
       case _ => ex
     case Tree.Node(childs) =>
       Tree.Node(childs.map(_.replace(replacements)))
-  def bindIdsInPattern(pattern: SymEx): List[(String, SymEx)] =
-    (ex, pattern) match
-    case (Tree.Node(childs), Tree.Node(subPatterns)) =>
-      if childs.length == subPatterns.length then
-        childs.zip(subPatterns).flatMap((c, p) => c.bindIdsInPattern(p))
-      else
+  def bindIdsInPattern(pattern: SymEx): Either[List[String], List[(String, SymEx)]] =
+    def f(ex: SymEx, pattern: SymEx): List[(String, SymEx)] =
+      (ex, pattern) match
+      case (Tree.Node(childs), Tree.Node(subPatterns)) =>
+        if childs.length == subPatterns.length then
+          childs.zip(subPatterns).flatMap(f)
+        else
+          List()
+      case (_, Tree.Leaf(id @ s"$$$_")) =>
+        List((id, ex))
+      case _ =>
         List()
-    case (_, Tree.Leaf(id @ s"$$$_")) =>
-      List((id, ex))
-    case _ =>
-      List()
-
+    Right(f(ex, pattern))
 object SymEx:
   def sym(x: String|SymEx): SymEx = x match { case s: String => Tree.Leaf(s) case x: SymEx => x}
   def l(args: (String|SymEx)*) = Tree.Node(args.map(sym).toList)
