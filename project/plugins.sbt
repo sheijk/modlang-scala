@@ -14,3 +14,6 @@ addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.6.4")
 addSbtPlugin("io.spray" % "sbt-revolver" % "0.10.0")
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.5.2")
 addSbtPlugin("org.wartremover" % "sbt-wartremover" % "3.1.6")
+
+// For stb stage and nix package
+addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.9")
