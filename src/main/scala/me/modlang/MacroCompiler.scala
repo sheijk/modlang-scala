@@ -2,8 +2,6 @@ package me
 package modlang
 package macro_compiler
 
-import scala.Conversion
-
 trait Language[InEx, OutEx]:
   type I = InEx
   type O = OutEx
@@ -66,6 +64,7 @@ trait BuiltinBase[OutEx]:
   val name: String
   def create(ctx: Context, expr: InEx): Option[OutEx]
 
+// not a trait because this is used in a union type for run-time type-checking
 abstract class Builtin[Context_, InEx_, OutEx] extends BuiltinBase[OutEx]:
   type Context = Context_
   type InEx = InEx_
@@ -86,37 +85,29 @@ class SimpleScope[Symbol](parent: Option[Scope[Symbol]]) extends Scope[Symbol]:
   def subScope(): Scope[Symbol] =
     SimpleScope[Symbol](Some(this))
 
-enum MacroEx[OutEx]:
-  case S(s: String)
-  case B(b: BuiltinBase[OutEx])
-
-given symexToMacro[T] : Conversion[SymEx, Tree[MacroEx[T]]] with
-  def apply(x: SymEx): Tree[MacroEx[T]] =
-  x match
-    case Tree.Leaf(str) => Tree.Leaf(MacroEx.S(str))
-    case Tree.Node(exs) => Tree.Node(exs.map(symexToMacro(_)))
-
 trait MacroLanguage[OutEx] extends Language[SymEx, OutEx]:
   type Context <: ContextI
   trait ContextI:
     def symbols(): Scope[Symbol]
     def subContext(): Context
+  type MacroContext = Context
+
   type MacroBuiltin = Builtin[Context, SymEx, OutEx]
   def initBuiltins(): List[MacroBuiltin]
-
-  abstract class Macro:
-    val name: String
-    def expand(ctx: Context, ex: SymEx): SymEx
-
   def initMacros(): List[Macro]
+
   val globals: Scope[Symbol] =
     val table = SimpleScope[Symbol](None)
     initBuiltins().foreach(b => table.register(b.name, b))
     initMacros().foreach(m => table.register(m.name, m))
     table
 
-  case class NotFound()
   type Symbol = MacroBuiltin|Macro|NotFound
+  // not a trait because this is used in a union type for run-time type-checking
+  abstract class Macro:
+    val name: String
+    def expand(ctx: Context, ex: SymEx): SymEx
+  case class NotFound()
 
   def compilerError(msg: String, ex: SymEx): OutEx
   def translateList(ctx: Context, exs: List[I]): OutEx
@@ -136,20 +127,6 @@ trait MacroLanguage[OutEx] extends Language[SymEx, OutEx]:
     case Tree.Node(Tree.Leaf(id) :: _) => translate1(id)
     case Tree.Leaf(id) => translate1(id)
     case Tree.Node(exs) => translateList(ctx, exs)
-
-  type MacroContext = Context
-
-  def helloJan = new Macro:
-    type Context = MacroContext
-    val name: String = "helloJan"
-    def expand(ctx: Context, ex: SymEx): SymEx = SymEx.l(SymEx.l("name", "Jan"), "hello")
-
-  def janMode = new Macro:
-    type Context = MacroContext
-    val name: String = "janMode"
-    def expand(ctx: Context, ex: SymEx): SymEx =
-      ctx.symbols().register(helloJan.name, helloJan)
-      SymEx.l()
 
   def symbolMacro(mname: String, repl: List[SymEx]) = new Macro:
     val name = mname
@@ -192,7 +169,8 @@ trait MacroLanguage[OutEx] extends Language[SymEx, OutEx]:
         val paramNames = params.map(toIdOrError)
         ctx.symbols().register(mname, replacementMacro(mname, paramNames, repl))
         SymEx.nothing
-      case _ => ???
+      case _ =>
+        SymEx.error("Expected (defmacro (name [args:id ...]))", ex)
 
 case class HelloLanguage() extends MacroLanguage[Program]:
   def initMacros(): List[Macro] = List(janMode, defmacro)
@@ -247,6 +225,18 @@ case class HelloLanguage() extends MacroLanguage[Program]:
           ctx.name = Some(name)
           Some(() => List())
         case _ => None
+
+  def helloJan = new Macro:
+    type Context = MacroContext
+    val name: String = "helloJan"
+    def expand(ctx: Context, ex: SymEx): SymEx = SymEx.l(SymEx.l("name", "Jan"), "hello")
+
+  def janMode = new Macro:
+    type Context = MacroContext
+    val name: String = "janMode"
+    def expand(ctx: Context, ex: SymEx): SymEx =
+      ctx.symbols().register(helloJan.name, helloJan)
+      SymEx.l()
 
 def examples: List[(SymEx, Value, tfi.Location)] =
   import SymEx.*
