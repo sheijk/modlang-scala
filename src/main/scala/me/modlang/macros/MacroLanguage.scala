@@ -81,11 +81,16 @@ trait MacroLanguage[OutEx] extends Language[SymEx, OutEx]:
         ctx.symbols().register(mname, symbolMacro(mname, repl))
         SymEx.nothing
       case Tree.Node(Tree.Leaf(_) :: Tree.Node(Tree.Leaf(mname) :: params) :: repl) =>
+        var error: Option[SymEx] = None
         def toIdOrError(ex: SymEx): String =
-          ex match { case Tree.Leaf(n) => n case _ => ??? }
+          ex match
+            case Tree.Leaf(n @ s"$$$_") => n
+            case _ =>
+              error = Some(SymEx.error("Macro parameter should be param starting with a $", ex))
+              "*error*"
         val paramNames = params.map(toIdOrError)
         ctx.symbols().register(mname, replacementMacro(mname, paramNames, repl))
-        SymEx.nothing
+        error.getOrElse(SymEx.nothing)
       case _ =>
         SymEx.error("Expected (defmacro (name [args:id ...]))", ex)
 

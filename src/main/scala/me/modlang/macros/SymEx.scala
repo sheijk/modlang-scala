@@ -15,7 +15,7 @@ extension (ex: SymEx)
   def replace(replacements: List[(String, SymEx)]): SymEx =
     ex match
     case Tree.Leaf(name) =>
-      replacements.filter(name == "$" + _._1) match
+      replacements.filter(name == _._1) match
       case List((_, replacement)) => replacement
       case _ => ex
     case Tree.Node(childs) =>
