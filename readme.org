@@ -29,6 +29,10 @@ Mostly to see if tests and types get any simpler
 ** [[https://github.com/search?type=code&q=mkSbtDerivation][scala usage in nix on github]]
 
 ** [[https://duckduckgo.com/?t=ffab&q=emacs+metals+scala+eglot&ia=web][emacs metals scala eglot at DuckDuckGo]]
+* TODO https://www.scala-sbt.org/0.13/docs/Process.html
+:PROPERTIES:
+:CREATED:  <2024-02-03 Sat 15:52>
+:END:
 
 * Scala resources
 - [[https://docs.scala-lang.org/getting-started/index.html][Getting Started]]
@@ -47,6 +51,9 @@ Mostly to see if tests and types get any simpler
 - [[https://scalac.io/blog/tagless-final-pattern-for-scala-code/][Exploring Tagless Final pattern for extensive and readable Scala code]]
 - [[http://lambda-the-ultimate.org/node/2232][The Expression Problem Revisited (Java approaches)]]
 - [[https://www.scala-lang.org/docu/files/TheExpressionProblem.pdf][The expression problem (scala lang)]]
+- [[https://www.beyondthelines.net/programming/introduction-to-tagless-final/][Introduction to Tagless final – Beyond the lines]]
+- [[https://gist.github.com/OlivierBlanvillain/48bb5c66dbb0557da50465809564ee80][tfi.md revisiting tagless final interpreters]]
+- [[https://www.slideshare.net/jdegoes/quark-a-purelyfunctional-scala-dsl-for-data-processing-analytics][Quark: A Purely-Functional Scala DSL for Data Processing & Analytics]]
 
 - [[https://okmij.org/ftp/Computation/variables-effects.html][Free Variables and Free Effects]]
   
@@ -72,9 +79,43 @@ CLOSED: [2024-01-28 Sun 17:03]
 ** TODO https://melpa.org/#/scala-ts-mode
 :PROPERTIES:
 :CREATED:  <2024-02-04 Sun 13:29>
+* TODO val => def is nice
+:PROPERTIES:
+:CREATED:  <2024-02-22 Thu 22:02>
+:END:
+fixing ordering problems trivially
 * TODO [[https://jastadd.cs.lth.se/web/extendj/][JastAdd.org]]
 * [[https://www.cs.cornell.edu/projects/polyglot/][Polyglot extensible compiler framework]]
 * [[https://www.cs.cornell.edu/Projects/jx/][J&: Nested Inheritance for Java]]
 :PROPERTIES:
 :CREATED:  <2024-02-11 Sun 00:08>
 :END:
+* TODO [[https://blog.devgenius.io/efficient-extensible-expressive-typed-tagless-final-interpreters-in-rust-1eae71c822e8][Efficient, Extensible, Expressive: Typed Tagless Final Interpreters in Rust]]
+:PROPERTIES:
+:CREATED:  <2024-02-24 Sat 01:30>
+:END:
+
+[[https://github.com/kurtschelfthout/finally-tagless/tree/main][kurtschelfthout/finally-tagless]]
+[[https://github.com/michaelt/tagless][michaelt/tagless: oleg modules]]
+* TODO [[https://blog.rockthejvm.com/full-stack-typelevel/][How to Write a Full-Stack Scala 3 Application with the Typelevel Stack]]
+:PROPERTIES:
+:CREATED:  <2024-02-24 Sat 01:52>
+:END:
+- see if there are useful scala features
+- have a look at the DSLs
+[[https://blog.rockthejvm.com/practical-type-level-programming/][Practical Type-Level Programming in Scala 3]]
+* TODO macros for quickfix / code actions
+:PROPERTIES:
+:CREATED:  <2024-02-24 Sat 02:04>
+:END:
+
+@codeAction("simplify if" :doc "Double negation is harder to understand")
+macro if(!#cond) #onTrue #onFalse => if(#cond) #onFalse #onTrue
+
+@quickfix(removeSourceRange(beg, end))
+error UnreachableCode(beg: Location, end: Location)
+
+@quickfix(Warning, :doc "Please use standard order")
+macro public static _ ... => static public _ ...
+
+etc.
