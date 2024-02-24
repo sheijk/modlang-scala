@@ -57,3 +57,10 @@ def demo() =
   println("Macro compiler")
   def helloL = HelloLanguage()
   examples.foreach((ex, _, _) => helloL.runAndPrint(ex))
+  def p(s: String) =
+    val result = SymEx.parse(s)
+    println(s"parsed $result from '$s'")
+  p("foo ")
+  p("foo bar")
+  p("(a b c)")
+  p("(defun (foo x y) (ret 0))")
