@@ -36,11 +36,11 @@ def examples: List[(SymEx, Value, tfi.Location)] =
     f(seq(
       l("defmacro", l("swap", "$left", "$right"), "$right", "$left"),
       l("swap")),
-    List("error: Expected (swap $left $right) but found 0 arguments in ((swap))")),
+    List("error: Expected (swap $left $right) in ((swap))")),
     f(seq(
       l("defmacro", l("swap", "$left", "$right"), "$right", "$left"),
       l("swap", "too", "many", "args")),
-     List("error: Expected (swap $left $right) but found 3 arguments in ((swap too many args))")),
+     List("error: Expected (swap $left $right) in ((swap too many args))")),
 
     // Pattern macros
     f(seq(
@@ -51,7 +51,6 @@ def examples: List[(SymEx, Value, tfi.Location)] =
       l("defmacro", l("twice", l("name", "$name")), l(name("$name"), "hello", "hello")),
       l("twice", name("foobar"))),
       List("hello foobar!", "hello foobar!")),
-    // f(seq(l("defmacro", l("defun1", l("$name", "$arg"), "$body")
    )
 
 def demo() =

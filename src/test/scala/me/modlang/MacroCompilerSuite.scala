@@ -18,7 +18,7 @@ final class MacroCompilerSuite[Expr] extends TestSuite:
   test("SymEx.bindIdsInPattern should work"):
     import SymEx.*
     val addMulPattern = l("opt", l("+", "0", "$rhs"))
-    assertEquals(sym("foo").bindIdsInPattern(l("a", "b")), Right(List()))
+    assertEquals(sym("foo").bindIdsInPattern(l("a", "b")), Left(List("failed in foo")))
     assertEquals(
       l("a", "+", "b").bindIdsInPattern(l("$lhs", "+", "$rhs")),
         Right(List(("$lhs", sym("a")), ("$rhs", sym("b")))))

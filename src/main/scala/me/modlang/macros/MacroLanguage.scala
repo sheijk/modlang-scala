@@ -65,7 +65,8 @@ trait MacroLanguage[OutEx] extends Language[SymEx, OutEx]:
         val r = Tree.Node(newExs)
         println(s"Macro $pattern\n  in $ex\n  matches $replacements\n  to $repl\n  result $r")
         r
-      case _ => ???
+      case Left(_) =>
+        SymEx.error(s"Expected $pattern", ex)
 
   def defmacro = new Macro:
     type Context = MacroContext

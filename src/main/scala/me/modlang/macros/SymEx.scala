@@ -22,19 +22,30 @@ extension (ex: SymEx)
       case _ => ex
     case Tree.Node(childs) =>
       Tree.Node(childs.map(_.replace(replacements)))
+
   def bindIdsInPattern(pattern: SymEx): Either[List[String], List[(String, SymEx)]] =
+    val errors = scala.collection.mutable.ListBuffer[String]()
     def f(ex: SymEx, pattern: SymEx): List[(String, SymEx)] =
       (ex, pattern) match
       case (Tree.Node(childs), Tree.Node(subPatterns)) =>
         if childs.length == subPatterns.length then
           childs.zip(subPatterns).flatMap(f)
         else
+          errors.addOne(s"length mismatch in $childs")
           List()
       case (_, Tree.Leaf(id @ s"$$$_")) =>
         List((id, ex))
-      case _ =>
+      case (Tree.Leaf(exName), Tree.Leaf(patternName)) if exName == patternName =>
         List()
-    Right(f(ex, pattern))
+      case _ =>
+        errors.addOne(s"failed in $ex")
+        List()
+    val r = f(ex, pattern)
+    if errors.length == 0 then
+      Right(r)
+    else
+      Left(errors.toList)
+
 object SymEx:
   def sym(x: String|SymEx): SymEx = x match { case s: String => Tree.Leaf(s) case x: SymEx => x}
   def l(args: (String|SymEx)*) = Tree.Node(args.map(sym).toList)
