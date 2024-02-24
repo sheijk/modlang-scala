@@ -15,3 +15,18 @@ final class MacroCompilerSuite[Expr] extends TestSuite:
       assertEquals[Any, Any](expected, result, "examples")(using toMunit(loc), munit.Compare.defaultCompare)
     examples.foreach(check)
 
+  test("SymEx.bindIdsInPattern should work"):
+    import SymEx.*
+    val addMulPattern = l("opt", l("+", "0", "$rhs"))
+    assertEquals(sym("foo").bindIdsInPattern(l("a", "b")), List())
+    assertEquals(
+      l("a", "+", "b").bindIdsInPattern(l("$lhs", "+", "$rhs")),
+        List(("$lhs", sym("a")), ("$rhs", sym("b"))))
+    assertEquals(
+      l("a", "+", l("sum", "b", "c")).bindIdsInPattern(l("$lhs", "+", "$rhs")),
+        List(("$lhs", sym("a")), ("$rhs", l("sum", "b", "c"))))
+    assertEquals(l("opt", l("+", "0", "5")).bindIdsInPattern(addMulPattern),
+      List(("$rhs", sym("5"))))
+    assertEquals(l("opt", l("+", "0", l("3", "*", "7"))).bindIdsInPattern(addMulPattern),
+      List(("$rhs", l("3", "*", "7"))))
+

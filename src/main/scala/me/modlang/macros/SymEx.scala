@@ -10,6 +10,8 @@ enum Tree[+T]:
     case Leaf(id) => s"$id"
     case Node(args) => args.map(_.toString()).mkString("(", " ", ")")
 
+case class MatchError(msg: String, ex: SymEx, pattern: SymEx)
+
 type SymEx = Tree[String]
 extension (ex: SymEx)
   def replace(replacements: List[(String, SymEx)]): SymEx =
@@ -20,6 +22,17 @@ extension (ex: SymEx)
       case _ => ex
     case Tree.Node(childs) =>
       Tree.Node(childs.map(_.replace(replacements)))
+  def bindIdsInPattern(pattern: SymEx): List[(String, SymEx)] =
+    (ex, pattern) match
+    case (Tree.Node(childs), Tree.Node(subPatterns)) =>
+      if childs.length == subPatterns.length then
+        childs.zip(subPatterns).flatMap((c, p) => c.bindIdsInPattern(p))
+      else
+        List()
+    case (_, Tree.Leaf(id @ s"$$$_")) =>
+      List((id, ex))
+    case _ =>
+      List()
 
 object SymEx:
   def sym(x: String|SymEx): SymEx = x match { case s: String => Tree.Leaf(s) case x: SymEx => x}
