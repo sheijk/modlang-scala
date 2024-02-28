@@ -20,12 +20,12 @@ case class HelloLanguage() extends MacroLanguage[Program]:
         case (false, Some(name)) => s"hello $name!"
   def initialContext() = Context(globals)
 
-  def compilerError(msg: String, ex: SymEx): Program =
+  def compilerError(msg: String, ex: MacroEx): Program =
     () => s"error: $msg in $ex"
 
-  def translateList(ctx: Context, exs: List[I]) =
+  def translateList(ctx: Context, exs: List[MacroEx]) =
     val nestedCtx = ctx.subContext()
-    val outs: List[Program] = exs.map(translate(nestedCtx, _))
+    val outs: List[Program] = exs.map(translateI(nestedCtx, _))
     def toValues(v: Value): List[SingleValue] =
       v match
       case l: List[SingleValue] => l
@@ -36,7 +36,7 @@ case class HelloLanguage() extends MacroLanguage[Program]:
   type HelloBuiltin = Builtin
   def helloB = new HelloBuiltin:
     val name: String = "hello"
-    def create(ctx: Context, expr: SymEx): Option[Program] =
+    def create(ctx: Context, expr: MacroEx): Option[Program] =
       expr match
         case Tree.Leaf(_) =>
           val msg = ctx.hello()
@@ -44,27 +44,25 @@ case class HelloLanguage() extends MacroLanguage[Program]:
         case _ => None
   def shhhtB = new HelloBuiltin:
     val name: String = "shhht"
-    def create(ctx: Context, expr: SymEx): Option[Program] =
+    def create(ctx: Context, expr: MacroEx): Option[Program] =
       ctx.silent = true
       Some(() => List())
   def nameB = new HelloBuiltin:
     val name: String = "name"
-    def create(ctx: Context, expr: SymEx): Option[Program] =
+    def create(ctx: Context, expr: MacroEx): Option[Program] =
       expr match
-        case Tree.Node(List(Tree.Leaf(_), Tree.Leaf(name))) =>
+        case Tree.Node(List(Tree.Leaf(_), Tree.Leaf(name: String))) =>
           ctx.name = Some(name)
           Some(() => List())
         case _ => None
 
   def helloJan = new Macro:
-    type Context = MacroContext
     val name: String = "helloJan"
-    def expand(ctx: Context, ex: SymEx): SymEx = SymEx.l(SymEx.l("name", "Jan"), "hello")
+    def expand(ctx: Context, ex: MacroEx): SymEx = SymEx.l(SymEx.l("name", "Jan"), "hello")
 
   def janMode = new Macro:
-    type Context = MacroContext
     val name: String = "janMode"
-    def expand(ctx: Context, ex: SymEx): SymEx =
+    def expand(ctx: Context, ex: MacroEx): SymEx =
       ctx.symbols().register(helloJan.name, Symbol.M(helloJan))
       SymEx.l()
 

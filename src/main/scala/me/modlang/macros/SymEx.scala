@@ -10,9 +10,8 @@ enum Tree[+T]:
     case Leaf(id) => s"$id"
     case Node(args) => args.map(_.toString()).mkString("(", " ", ")")
 
-type SymEx = Tree[String]
-extension (ex: SymEx)
-  def replace(replacements: List[(String, SymEx)]): SymEx =
+extension[T] (ex: Tree[T])
+  def replace(replacements: List[(String, Tree[T])]): Tree[T] =
     ex match
     case Tree.Leaf(name) =>
       replacements.filter(name == _._1) match
@@ -21,9 +20,9 @@ extension (ex: SymEx)
     case Tree.Node(childs) =>
       Tree.Node(childs.map(_.replace(replacements)))
 
-  def bindIdsInPattern(pattern: SymEx): Either[List[String], List[(String, SymEx)]] =
+  def bindIdsInPattern(pattern: SymEx): Either[List[String], List[(String, Tree[T])]] =
     val errors = scala.collection.mutable.ListBuffer[String]()
-    def f(ex: SymEx, pattern: SymEx): List[(String, SymEx)] =
+    def f(ex: Tree[T], pattern: SymEx): List[(String, Tree[T])] =
       (ex, pattern) match
       case (Tree.Node(childs), Tree.Node(subPatterns)) =>
         if childs.length == subPatterns.length then
@@ -44,6 +43,7 @@ extension (ex: SymEx)
     else
       Left(errors.toList)
 
+type SymEx = Tree[String]
 
 object SymEx:
   def sym(x: String|SymEx): SymEx = x match { case s: String => Tree.Leaf(s) case x: SymEx => x}
