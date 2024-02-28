@@ -9,34 +9,42 @@ trait MacroLanguage[OutEx] extends Language[SymEx, OutEx]:
     def subContext(): Context
   type MacroContext = Context
 
-  type MacroBuiltin = Builtin[Context, SymEx, OutEx]
-  def initBuiltins(): List[MacroBuiltin]
+  def initBuiltins(): List[Builtin]
   def initMacros(): List[Macro]
 
   val globals: Scope[Symbol] =
     val table = SimpleScope[Symbol](None)
-    initBuiltins().foreach(b => table.register(b.name, b))
-    initMacros().foreach(m => table.register(m.name, m))
+    initBuiltins().foreach(b => table.register(b.name, Symbol.B(b)))
+    initMacros().foreach(m => table.register(m.name, Symbol.M(m)))
     table
 
-  type Symbol = MacroBuiltin|Macro|NotFound
-  // not a trait because this is used in a union type for run-time type-checking
-  abstract class Macro:
+  trait Builtin:
+    val name: String
+    def create(ctx: Context, expr: SymEx): Option[OutEx]
+
+  trait Macro:
     val name: String
     def expand(ctx: Context, ex: SymEx): SymEx
-  case class NotFound()
+
+  enum Symbol:
+    case B(b: Builtin)
+    case M(m: Macro)
+    case NotFound
+
+  def lookupSymbol(ctx: Context, id: String) =
+    ctx.symbols().lookup(id).getOrElse(Symbol.NotFound)
 
   def compilerError(msg: String, ex: SymEx): OutEx
   def translateList(ctx: Context, exs: List[I]): OutEx
   def translate(ctx: Context, ex: I): O =
     def translate1(id: String): O =
-      ctx.symbols().lookup(id) match
-      case Some(m: Macro) =>
+      lookupSymbol(ctx, id) match
+      case Symbol.M(m) =>
         translate(ctx, m.expand(ctx, ex))
-      case Some(b: MacroBuiltin) =>
+      case Symbol.B(b) =>
         b.create(ctx, ex).getOrElse(
           compilerError(s"Builtin expression $id is invalid", ex))
-      case None | Some(_: NotFound) =>
+      case Symbol.NotFound =>
         compilerError(s"Unknown id $id", ex)
     ex match
     case Tree.Node(Tree.Leaf("error") :: Tree.Leaf(msg) :: args ) => compilerError(msg, Tree.Node(args))
@@ -74,10 +82,10 @@ trait MacroLanguage[OutEx] extends Language[SymEx, OutEx]:
     def expand(ctx: Context, ex: SymEx): SymEx =
       ex match
       case Tree.Node(Tree.Leaf(_) :: Tree.Node(List(Tree.Leaf(mname))) :: repl) =>
-        ctx.symbols().register(mname, symbolMacro(mname, repl))
+        ctx.symbols().register(mname, Symbol.M(symbolMacro(mname, repl)))
         SymEx.nothing
       case Tree.Node(Tree.Leaf(_) :: (pattern @ Tree.Node(Tree.Leaf(mname) :: _)) :: repl) =>
-        ctx.symbols().register(mname, replacementMacro(mname, pattern, repl))
+        ctx.symbols().register(mname, Symbol.M(replacementMacro(mname, pattern, repl)))
         SymEx.nothing
       case _ =>
         SymEx.error("Expected (defmacro (name [args:id ...]))", ex)

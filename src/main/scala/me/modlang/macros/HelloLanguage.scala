@@ -33,10 +33,10 @@ case class HelloLanguage() extends MacroLanguage[Program]:
     () =>
       outs.flatMap(p => toValues(p()))
 
-  type HelloBuiltin = MacroBuiltin
+  type HelloBuiltin = Builtin
   def helloB = new HelloBuiltin:
     val name: String = "hello"
-    def create(ctx: this.Context, expr: SymEx): Option[Program] =
+    def create(ctx: Context, expr: SymEx): Option[Program] =
       expr match
         case Tree.Leaf(_) =>
           val msg = ctx.hello()
@@ -44,12 +44,12 @@ case class HelloLanguage() extends MacroLanguage[Program]:
         case _ => None
   def shhhtB = new HelloBuiltin:
     val name: String = "shhht"
-    def create(ctx: this.Context, expr: SymEx): Option[Program] =
+    def create(ctx: Context, expr: SymEx): Option[Program] =
       ctx.silent = true
       Some(() => List())
   def nameB = new HelloBuiltin:
     val name: String = "name"
-    def create(ctx: this.Context, expr: SymEx): Option[Program] =
+    def create(ctx: Context, expr: SymEx): Option[Program] =
       expr match
         case Tree.Node(List(Tree.Leaf(_), Tree.Leaf(name))) =>
           ctx.name = Some(name)
@@ -65,6 +65,6 @@ case class HelloLanguage() extends MacroLanguage[Program]:
     type Context = MacroContext
     val name: String = "janMode"
     def expand(ctx: Context, ex: SymEx): SymEx =
-      ctx.symbols().register(helloJan.name, helloJan)
+      ctx.symbols().register(helloJan.name, Symbol.M(helloJan))
       SymEx.l()
 
