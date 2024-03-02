@@ -1,7 +1,17 @@
-
 Port of modular-lang-proto from OCaml to Scala
 
 Mostly to see if tests and types get any simpler
+
+next up:
+- [X] rewrite rules
+- [ ] types for asts + builtins
+  - make Symbol an enum
+  - change sig of Macro, Builtin
+  - change sig of Language.translate
+- [ ] allow builtins in ast during macro expansion
+- [ ] different base languages instead of hello
+- [ ] integrate into tfi?
+
 
 * Info for Scala/Metal/Emacs
 ** TODO indentation with metals
@@ -119,3 +129,72 @@ error UnreachableCode(beg: Location, end: Location)
 macro public static _ ... => static public _ ...
 
 etc.
+* TODO [[https://www.haskellforall.com/2024/02/unification-free-keyword-type-checking.html][Haskell for all: Unification-free ("keyword") type checking]]
+:PROPERTIES:
+:CREATED:  <2024-02-26 Mon 16:46>
+:END:
+* TODO [[https://github.com/williamdemeo/TypeFunc][williamdemeo/TypeFunc: Resources for type theory, functional programming, etc.]]
+:PROPERTIES:
+:CREATED:  <2024-02-26 Mon 16:58>
+:END:
+* TODO [[https://justinpombrio.net/2024/02/23/a-twist-on-Wadlers-printer.html][A Twist on Wadler's Printer]]
+:PROPERTIES:
+:CREATED:  <2024-02-26 Mon 17:09>
+:END:
+* Example languages
+
+ast Expr
+ast Add(lhs: Expr, rhs:Expr): Expr
+ast Mul(lhs: Expr, rhs:Expr): Expr
+ast If(cond: Expr, onT: Expr, onF: Expr): Expr
+ast Loop(body: Expr): Expr
+
+ast Type
+ast Int(bit: int): Type
+
+ast Toplevel
+ast Function(sig: FunctionType, body: Expr): Toplevel
+
+macro foo(x: Expr, y: Expr, t: Type): Expr
+
+
+#+begin_src scala
+type FromSymex[T]:
+  def parse(args: List[SymEx]): Error[T]
+
+given parseInt : FromSymex[Int]
+
+given parseFn[I, O](using FromSymex[I]) : FromSymex[I => O]:
+
+given apply[I, O](using parseFn: FromSymex[I => O], parseArg: FromSymex[I]) : FromSymex[O]:
+  def parse(args: List[SymEx]): Error[T] =
+    args match
+    case hd :: remArgs =>
+      val arg <- parseArg.parse(hd)
+      val fn <- parseFn.parse(args)
+      fn(arg)
+
+def register[T : FromSymex](name: String, t: T) =
+  symbols[name] = t
+
+def translate(ex: SymEx) =
+  ex match
+  case Node(Leaf(name) :: args) =>
+    val t <- symbols.lookup(name)
+    t.parse(args)
+
+// In Lang[?]
+given parseExpr : FromSymex[l.Expr] = ... translate
+
+// Add typeclass derivation providing a scope with all functions returning Expr registered
+
+#+end_src
+* TODO [[https://github.com/sdiehl/write-you-a-haskell/blob/master/chapter6/hoas.hs][HOAS in write you a haskell, book on functional compilers]]
+:PROPERTIES:
+:CREATED:  <2024-02-29 Thu 01:14>
+:END:
+unfortunately this has been abandoned
+* TODO [[https://www.philipzucker.com/notes/Programming/macros-partial-eval/][Macros & Partial Evaluation | Hey There Buddo!]]
+:PROPERTIES:
+:CREATED:  <2024-02-29 Thu 02:00>
+:END:
