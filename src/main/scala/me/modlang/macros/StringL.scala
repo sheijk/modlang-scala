@@ -71,9 +71,12 @@ package StringL:
     override def rules() = this.calcRules()
 
   extension[T, L[T] <: tfi.Algo.Lang[T]] (p: ParseLang[T, L])
-    def algoRules() =
-      List(p.rewriteRule("(if $cond $onTrue $onFalse)",
-        args => p.lang.if_(args("$cond"), args("$onTrue"), args("$onFalse"))))
+    def algoRules() = List(
+      p.rewriteRule("(if $cond :then $onTrue :else $onFalse)",
+        args => p.lang.if_(args("$cond"), args("$onTrue"), args("$onFalse"))),
+      p.rewriteRule("(loop $name $body)", args => p.lang.loop("foo", _ => args("$body"))),
+      // Need to store loop in context and retrieve it for break(loop)
+    )
 
   given parseAlgoCalc: ParseLang[Calc.Value, Algo_calc.Lang] = new ParseLang[Calc.Value, Algo_calc.Lang](summon[Algo_calc.Lang[Calc.Value]]):
     def parseString(str: String): Option[lang.Expr] = parseCalcValue(using lang)(str)
@@ -85,7 +88,8 @@ package StringL:
     val intExs = List("10", "plus 10 20", "plus (plus 5 5) 20")
     val boolExs = List("true", "false", "and true false", "and (and true false) true")
     val calcExs = intExs ++ boolExs ++ List("and (greaterThan (plus 1 2) 2) true")
-    val algoCalcExs = calcExs ++ List("if (greaterThan 2 3) false true")
+    val algoCalcExs = calcExs ++ List("if (greaterThan 2 3) :then false :else true",
+      "loop l (break l 10)")
     run[Int, tfi.Calc_int.Lang](intExs*)
     run[Boolean, tfi.Calc_bool.Lang](boolExs*)
     run[Calc.Value, tfi.Calc.Lang](calcExs*)
