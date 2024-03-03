@@ -49,15 +49,36 @@ package StringL:
       else if str == "false" then Some(lang.bool(false))
       else None
 
+  trait ParseCalc[T] extends ParseLang[T, tfi.Calc.Lang], ParseCalcBool[T], ParseCalcInt[T]:
+    override def builtins(): SymbolTable =
+     val s = SimpleScope[Parser](None)
+     s.register("plus", ex =>
+       ex match
+       case Tree.Node(List(Tree.Leaf("greaterThan"), lhs, rhs)) =>
+         parse(lhs).flatMap(l => parse(rhs).map(r => lang.greaterThan(l, r)))
+       case _ => None)
+     s
+
+    override def parseString(str: String): Option[lang.Expr] =
+      super[ParseCalcBool].parseString(str).orElse(super[ParseCalcInt].parseString(str))
+
   def demo() =
     println("Parsing tfi language")
     import tfi.*
     import tfi.Calc_int.{given}
     import tfi.Calc_bool.{given}
+    import tfi.Calc.{given}
     given ParseCalcInt[Int] with ParseLang[Int, Calc_int.Lang](summon[Calc_int.Lang[Int]]) with {}
     given ParseCalcBool[Boolean] with ParseLang[Boolean, Calc_bool.Lang](summon[Calc_bool.Lang[Boolean]]) with {}
+// [error] -- Error: /Users/jr/Documents/Development/modular-lang-proto/external/temp/modlang/src/main/scala/me/modlang/macros/StringL.scala:73:10 
+// [error] 73 |    given ParseCalc[Calc.Value] with ParseLang[Calc.Value, Calc.Lang](summon[Calc.Lang[Calc.Value]]) with {}
+// [error]    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+// [error]    |object given_ParseCalc_Value_ParseLang_Value_Lang cannot be instantiated since it has conflicting base types me.modlang.macro_compiler.StringL.ParseLang[me.modlang.tfi.Calc.Value, me.modlang.tfi.Calc_bool.Lang] &
+// [error]    |  me.modlang.macro_compiler.StringL.ParseLang[me.modlang.tfi.Calc.Value, me.modlang.tfi.Calc_int.Lang] and me.modlang.macro_compiler.StringL.ParseLang[me.modlang.tfi.Calc.Value, me.modlang.tfi.Calc.Lang]
+    given ParseCalc[Calc.Value] with ParseLang[Calc.Value, Calc.Lang](summon[Calc.Lang[Calc.Value]]) with {}
     run[Int, tfi.Calc_int.Lang]("10", "plus 10 20", "plus (plus 5 5) 20")
     run[Boolean, tfi.Calc_bool.Lang]("true", "false", "and true (or true false)")
+    run[Calc.Value, tfi.Calc.Lang]("true", "false", "and true (or true false)")
 
   def run[T, L[T] <: tfi.Empty.Lang[T]](src: String*)(using eval : L[T], parser : ParseLang[T, L]) =
     def p(src: String) =
