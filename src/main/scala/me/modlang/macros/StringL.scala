@@ -3,10 +3,11 @@ package modlang
 package macro_compiler
 
 package StringL:
-  import tfi.{Calc_int, Calc_bool, Calc}
+  import tfi.{Calc_int, Calc_bool, Calc, Algo, Algo_calc}
   import Calc_int.{given}
   import Calc_bool.{given}
   import Calc.{given}
+  import Algo_calc.{given}
 
   trait ParseLang[T, L[T] <: tfi.Empty.Lang[T]](val lang: L[T]):
     type Parser = SymEx => Option[lang.Expr]
@@ -69,15 +70,26 @@ package StringL:
     def parseString(str: String): Option[lang.Expr] = parseCalcValue(using lang)(str)
     override def rules() = this.calcRules()
 
+  extension[T, L[T] <: tfi.Algo.Lang[T]] (p: ParseLang[T, L])
+    def algoRules() =
+      List(p.rewriteRule("(if $cond $onTrue $onFalse)",
+        args => p.lang.if_(args("$cond"), args("$onTrue"), args("$onFalse"))))
+
+  given parseAlgoCalc: ParseLang[Calc.Value, Algo_calc.Lang] = new ParseLang[Calc.Value, Algo_calc.Lang](summon[Algo_calc.Lang[Calc.Value]]):
+    def parseString(str: String): Option[lang.Expr] = parseCalcValue(using lang)(str)
+    override def rules() = this.algoRules() ++ this.calcRules()
+
   def demo() =
     println("Parsing tfi language")
     import tfi.*
     val intExs = List("10", "plus 10 20", "plus (plus 5 5) 20")
     val boolExs = List("true", "false", "and true false", "and (and true false) true")
     val calcExs = intExs ++ boolExs ++ List("and (greaterThan (plus 1 2) 2) true")
+    val algoCalcExs = calcExs ++ List("if (greaterThan 2 3) false true")
     run[Int, tfi.Calc_int.Lang](intExs*)
     run[Boolean, tfi.Calc_bool.Lang](boolExs*)
     run[Calc.Value, tfi.Calc.Lang](calcExs*)
+    run[Algo_calc.Value, tfi.Algo_calc.Lang](algoCalcExs*)
 
   def run[T, L[T] <: tfi.Empty.Lang[T]](src: String*)(using eval : L[T], parser : ParseLang[T, L]) =
     def p(src: String) =
