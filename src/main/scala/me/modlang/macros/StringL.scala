@@ -34,13 +34,32 @@ package StringL:
     def parseString(str: String): Option[lang.Expr] =
       str.toIntOption.map(lang.int)
 
+  trait ParseCalcBool[T] extends ParseLang[T, tfi.Calc_bool.Lang]:
+    def builtins(): SymbolTable =
+     val s = SimpleScope[Parser](None)
+     s.register("plus", ex =>
+       ex match
+       case Tree.Node(List(Tree.Leaf("and"), lhs, rhs)) =>
+         parse(lhs).flatMap(l => parse(rhs).map(r => lang.and(l, r)))
+       case _ => None)
+     s
+
+    def parseString(str: String): Option[lang.Expr] =
+      if str == "true" then Some(lang.bool(true))
+      else if str == "false" then Some(lang.bool(false))
+      else None
+
   def demo() =
     println("Parsing tfi language")
-    import tfi.Calc_int.{*, given}
-    given ParseCalcInt[Int] with ParseLang[Int, Lang](summon[Lang[Int]]) with {}
-    run[tfi.Calc_int.Lang]("10", "plus 10 20", "plus (plus 5 5) 20")
+    import tfi.*
+    import tfi.Calc_int.{given}
+    import tfi.Calc_bool.{given}
+    given ParseCalcInt[Int] with ParseLang[Int, Calc_int.Lang](summon[Calc_int.Lang[Int]]) with {}
+    given ParseCalcBool[Boolean] with ParseLang[Boolean, Calc_bool.Lang](summon[Calc_bool.Lang[Boolean]]) with {}
+    run[Int, tfi.Calc_int.Lang]("10", "plus 10 20", "plus (plus 5 5) 20")
+    run[Boolean, tfi.Calc_bool.Lang]("true", "false", "and true (or true false)")
 
-  def run[L[Int] <: tfi.Empty.Lang[Int]](src: String*)(using eval : L[Int], parser : ParseLang[Int, L]) =
+  def run[T, L[T] <: tfi.Empty.Lang[T]](src: String*)(using eval : L[T], parser : ParseLang[T, L]) =
     def p(src: String) =
       val ex: Option[parser.lang.Expr] = parser.parse(SymEx.parse(src).getOrElse(SymEx.sym("parsing error")))
       ex match
