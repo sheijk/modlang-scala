@@ -3,6 +3,11 @@ package modlang
 package macro_compiler
 
 package StringL:
+  import tfi.{Calc_int, Calc_bool, Calc}
+  import Calc_int.{given}
+  import Calc_bool.{given}
+  import Calc.{given}
+
   trait ParseLang[T, L[T] <: tfi.Empty.Lang[T]](val lang: L[T]):
     type Parser = SymEx => Option[lang.Expr]
     type SymbolTable = Scope[Parser]
@@ -32,41 +37,41 @@ package StringL:
     def calcIntRules() =
       List(p.rewriteRule("(plus $lhs $rhs)", args => p.lang.plus(args("$lhs"), args("$rhs"))))
 
+  def parseIntValue[T](using lang: tfi.Calc_int.Lang[T])(str: String): Option[lang.Expr] =
+      str.toIntOption.map(lang.int)
+
+  given ParseLang[Int, Calc_int.Lang](summon[Calc_int.Lang[Int]]) with
+    override def rules() = this.calcIntRules()
+    def parseString(str: String): Option[lang.Expr] = parseIntValue(using lang)(str)
+
   extension[T, L[T] <: tfi.Calc_bool.Lang[T]] (p: ParseLang[T, L])
     def calcBoolRules() =
       List(p.rewriteRule("(and $lhs $rhs)", args => p.lang.and(args("$lhs"), args("$rhs"))))
-
-  extension[T, L[T] <: tfi.Calc.Lang[T]] (p: ParseLang[T, L])
-    def calcRules() =
-      p.calcIntRules() ++ p.calcBoolRules() ++
-      List(p.rewriteRule("(greaterThan $lhs $rhs)", args => p.lang.greaterThan(args("$lhs"), args("$rhs"))))
-
-  def parseIntValue[T](using lang: tfi.Calc_int.Lang[T])(str: String): Option[lang.Expr] =
-      str.toIntOption.map(lang.int)
 
   def parseBoolValue[T](using lang: tfi.Calc_bool.Lang[T])(str: String): Option[lang.Expr] =
       if str == "true" then Some(lang.bool(true))
       else if str == "false" then Some(lang.bool(false))
       else None
 
+  given ParseLang[Boolean, Calc_bool.Lang](summon[Calc_bool.Lang[Boolean]]) with
+    override def rules() = this.calcBoolRules()
+    def parseString(str: String): Option[lang.Expr] = parseBoolValue(using lang)(str)
+
+  extension[T, L[T] <: tfi.Calc.Lang[T]] (p: ParseLang[T, L])
+    def calcRules() =
+      p.calcIntRules() ++ p.calcBoolRules() ++
+      List(p.rewriteRule("(greaterThan $lhs $rhs)", args => p.lang.greaterThan(args("$lhs"), args("$rhs"))))
+
   def parseCalcValue[T](using lang: tfi.Calc.Lang[T])(str: String): Option[lang.Expr] =
       parseBoolValue(str).orElse(parseIntValue(str))
+
+  given ParseLang[Calc.Value, Calc.Lang](summon[Calc.Lang[Calc.Value]]) with
+    def parseString(str: String): Option[lang.Expr] = parseCalcValue(using lang)(str)
+    override def rules() = this.calcRules()
 
   def demo() =
     println("Parsing tfi language")
     import tfi.*
-    import tfi.Calc_int.{given}
-    import tfi.Calc_bool.{given}
-    import tfi.Calc.{given}
-    given ParseLang[Int, Calc_int.Lang](summon[Calc_int.Lang[Int]]) with
-      override def rules() = this.calcIntRules()
-      def parseString(str: String): Option[lang.Expr] = parseIntValue(using lang)(str)
-    given ParseLang[Boolean, Calc_bool.Lang](summon[Calc_bool.Lang[Boolean]]) with
-      override def rules() = this.calcBoolRules()
-      def parseString(str: String): Option[lang.Expr] = parseBoolValue(using lang)(str)
-    given ParseLang[Calc.Value, Calc.Lang](summon[Calc.Lang[Calc.Value]]) with
-      def parseString(str: String): Option[lang.Expr] = parseCalcValue(using lang)(str)
-      override def rules() = this.calcRules()
     val intExs = List("10", "plus 10 20", "plus (plus 5 5) 20")
     val boolExs = List("true", "false", "and true false", "and (and true false) true")
     val calcExs = intExs ++ boolExs ++ List("and (greaterThan (plus 1 2) 2) true")
