@@ -29,6 +29,7 @@ trait MacroLanguage[OutEx] extends Language[SymEx, OutEx]:
   enum Symbol:
     case B(b: Builtin)
     case M(m: Macro)
+    case D(data: Any)
     case NotFound
 
   type MacroEx = Tree[String|Symbol]
@@ -37,6 +38,7 @@ trait MacroLanguage[OutEx] extends Language[SymEx, OutEx]:
     case str: String => str
     case Symbol.M(m) => m.name
     case Symbol.B(b) => b.name
+    case Symbol.D(data) => data.toString
     case Symbol.NotFound => "not found"
 
   def toSymEx(ex: MacroEx): SymEx =
@@ -62,6 +64,8 @@ trait MacroLanguage[OutEx] extends Language[SymEx, OutEx]:
       case Symbol.B(b) =>
         b.create(ctx, ex).getOrElse(
           compilerError(s"Builtin expression $id is invalid", ex))
+      case Symbol.D(data) =>
+        compilerError(s"Don't know how to translate data $data", ex)
       case Symbol.NotFound =>
         compilerError(s"Unknown id $id", ex)
     ex match
