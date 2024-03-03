@@ -31,6 +31,7 @@ package Calc_int:
     def int(v: Int): Expr = () => fromInt(v)
     def plus(lhs: Expr, rhs: Expr): Expr =
       () => fromInt(asInt(lhs()) + asInt(rhs()))
+  class Eval extends EvalMixin[Value], EvalInt[Value]
   given EvalMixin[Value] with EvalInt[Value] with {}
 
   def testcases =
