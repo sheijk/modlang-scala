@@ -32,7 +32,8 @@ def andreMode() =
   andreMode()
   typeclass.demo()
   tfi.demo()
-  macro_compiler.demo()
-  macro_compiler.StringL.demo()
+  // macro_compiler.demo()
+  // macro_compiler.StringL.demo()
+  tfi.NewDesign.demo()
 
   println("─" * 100)
