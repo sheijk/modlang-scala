@@ -3,59 +3,60 @@ package modlang
 package tfi
 
 package NewDesign:
-  trait Lang[E[T, Env]]
+  trait Lang[E[T]]
 
-  trait AddL[E[T, Env]] extends Lang[E]:
-    def int[Env](v: Int): E[Int, Env]
-    def add[Env](lhs: E[Int, Env], rhs: E[Int, Env]): E[Int, Env]
+  trait AddL[E[T]] extends Lang[E]:
+    def int[Env](v: Int): E[Int]
+    def add[Env](lhs: E[Int], rhs: E[Int]): E[Int]
+    def mul[Env](lhs: E[Int], rhs: E[Int]): E[Int]
 
-  trait NegL[E[T, Env]] extends Lang[E]:
-    def neg[Env](e: E[Int, Env]): E[Int, Env]
+  trait NegL[E[T]] extends Lang[E]:
+    def neg[Env](e: E[Int]): E[Int]
 
-  sealed trait Var[T, Env]:
-    def toInt: Int
-  case class VarZ[T, Env]() extends Var[T, Env]:
-    def toInt = 0
-  case class VarS[T, Env](n: Var[T, Env]) extends Var[T, (T, Env)]:
-    def toInt = 1 + n.toInt
+  trait LambdaL[E[T]] extends Lang[E]:
+    def lambda[I, O](body: E[I] => E[O]): E[I => O]
+    def call[R, T](f: E[T => R], x: E[T]): E[R]
 
-  trait LambdaL[E[T, Env]] extends Lang[E]:
-    def v[T, Env](): E[(Env, T), T]
-    def lambda[I, O, Env](body: E[I, (I, Env)] => E[O, (I, Env)]): E[I => O, Env]
-    def call[R, T, Env](f: E[T => R, Env], x: E[T, Env]): E[R, Env]
+  trait FuncL[E[T]] extends AddL[E], NegL[E], LambdaL[E]
 
-  trait FuncL[E[T, Env]] extends AddL[E], NegL[E], LambdaL[E]
-
-  type StringE[T, Env] = String
+  type StringE[T] = String
 
   case class Show() extends FuncL[StringE]:
-    type E[T, Env] = StringE[T, Env]
-    override def int[Env](v: Int): E[Int, Env] = v.toString
-    override def add[Env](lhs: E[Int, Env], rhs: E[Int, Env]): E[Int, Env] = s"($lhs + $rhs)"
-    override def neg[Env](e: E[Int, Env]): E[Int, Env] = s"-($e)"
-    override def v[T, Env](): E[(Env, T), T] = s"v"
-    override def lambda[I, O, Env](body: E[I, (I, Env)] => E[O, (I, Env)]): E[I => O, Env] =
+    type E[T] = StringE[T]
+    override def int[Env](v: Int): E[Int] = v.toString
+    override def add[Env](lhs: E[Int], rhs: E[Int]): E[Int] = s"($lhs + $rhs)"
+    override def mul[Env](lhs: E[Int], rhs: E[Int]): E[Int] = s"($lhs * $rhs)"
+    override def neg[Env](e: E[Int]): E[Int] = s"-($e)"
+    override def lambda[I, O](body: E[I] => E[O]): E[I => O] =
       val bd = body("v")
       s"(v => $bd)"
-    override def call[R, T, Env](f: E[T => R, Env], x: E[T, Env]): E[R, Env] =
-      s"$f$x"
+    override def call[R, T](f: E[T => R], x: E[T]): E[R] =
+      s"($f $x)"
 
-  type Run[T, Env] = T
+  type Run[T] = T
 
   case class Eval() extends FuncL[Run]:
-    type E[T, Env] = Run[T, Env]
-    override def int[Env](v: Int): E[Int, Env] = v
-    override def add[Env](lhs: E[Int, Env], rhs: E[Int, Env]): E[Int, Env] = lhs + rhs
-    override def neg[Env](e: E[Int, Env]): E[Int, Env] = -e
-    override def v[T, Env](): E[(Env, T), T] = ???
-    override def lambda[I, O, Env](body: E[I, (I, Env)] => E[O, (I, Env)]): E[I => O, Env] = x => body(x)
-    override def call[R, T, Env](f: E[T => R, Env], x: E[T, Env]): E[R, Env] = f(x)
+    type E[T] = Run[T]
+    override def int[Env](v: Int): E[Int] = v
+    override def add[Env](lhs: E[Int], rhs: E[Int]): E[Int] = lhs + rhs
+    override def mul[Env](lhs: E[Int], rhs: E[Int]): E[Int] = lhs * rhs
+    override def neg[Env](e: E[Int]): E[Int] = -e
+    override def lambda[I, O](body: E[I] => E[O]): E[I => O] = x => body(x)
+    override def call[R, T](f: E[T => R], x: E[T]): E[R] = f(x)
 
   def demo() =
     println("NewDesign")
-    // def test[E[_, _]](l: FuncL[E]): E[Int, Any] = l.add(l.int(2), l.int(3))
-    def test[E[_, _]](l: FuncL[E]) = l.call(l.lambda(v => l.add(l.int(2), v)), l.int(5))
-    def src: String = test(Show())
-    def result = test(Eval())
-    println(s"  eval($src) = $result")
-
+    def a() =
+      def test[E[_]](l: FuncL[E]): E[Int] = l.add(l.int(2), l.int(3))
+      println(s"  eval(${test(Show())}) = ${test(Eval())}")
+    def b() =
+      def test[E[_]](l: FuncL[E]) = l.call(l.lambda(v => l.add(l.int(2), v)), l.int(5))
+      println(s"  eval(${test(Show())}) = ${test(Eval())}")
+    def c() =
+      def test[E[_]](l: FuncL[E]) =
+        val foo = l.lambda((a: E[Int]) => l.lambda((b: E[Int]) => l.mul(a, b)))
+        l.call(l.call(foo, l.int(10)), l.int(5))
+      println(s"  eval(${test(Show())}) = ${test(Eval())}")
+    a()
+    b()
+    c()
